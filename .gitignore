@@ -1,0 +1,19 @@
+# ===== Python =====
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ===== Data (NTU, processed files) =====
+data/
+*.npz
+
+# ===== Training outputs =====
+work_dir/
+runs/
+logs/
+checkpoints/
+
+# ===== IDE =====
+.vscode/
+.idea/
