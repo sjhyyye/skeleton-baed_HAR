@@ -4,10 +4,10 @@ work_dir: ./work_dir/ntu/cs/SkateFormer_j/2025_12_21
 
 phase: train
 
-# feeder
+# feederpython main.py --config ./config/train/ntu_cs/SkateFormer_j.yaml
 feeder: feeders.feeder_ntu.Feeder
 train_feeder_args:
-  data_path: ./data/ntu/NTU60_CS.npz
+  data_path: ./data/ntu/NTU27_CS.npz
   split: train
   debug: False
   window_size: 64
@@ -20,7 +20,7 @@ train_feeder_args:
   partition: True
 
 test_feeder_args:
-  data_path: ./data/ntu/NTU60_CS.npz
+  data_path: ./data/ntu/NTU27_CS.npz
   split: test
   window_size: 64
   p_interval: [0.95]
@@ -32,9 +32,9 @@ test_feeder_args:
 # model
 model: model.SkateFormer.SkateFormer_
 model_args:
-  num_classes: 60
+  num_classes: 27
   num_people: 2
-  num_points: 24
+  num_points: 24 #25?
   kernel_size: 7
   num_heads: 32
   attn_drop: 0.5

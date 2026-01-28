@@ -155,8 +155,8 @@ class SkateFormerBlock(nn.Module):
         self.rel_type = ['type_1', 'type_2', 'type_3', 'type_4']
 
         # Adaptive gates for the four MSA branches: generated from current token features
-        attn_dim = 3 * in_channels // 2
-        hidden_dim = max(attn_dim // 4, len(self.partition_function))
+        attn_dim = 3 * in_channels // 2  
+        hidden_dim = max(attn_dim * 4 , 128) #把C通道扩大到6倍，attn_dim = 1.5C
         self.gate_mlp = nn.Sequential(
             nn.Linear(attn_dim, hidden_dim),
             nn.ReLU(inplace=True),
