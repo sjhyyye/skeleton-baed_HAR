@@ -154,15 +154,6 @@ class SkateFormerBlock(nn.Module):
         self.partition_size = [type_1_size, type_2_size, type_3_size, type_4_size]
         self.rel_type = ['type_1', 'type_2', 'type_3', 'type_4']
 
-        # Adaptive gates for the four MSA branches: generated from current token features
-        attn_dim = 3 * in_channels // 2  
-        hidden_dim = max(attn_dim * 4 , 128) #把C通道扩大到6倍，attn_dim = 1.5C
-        self.gate_mlp = nn.Sequential(
-            nn.Linear(attn_dim, hidden_dim),
-            nn.ReLU(inplace=True),
-            nn.Linear(hidden_dim, len(self.partition_function))
-        )
-
         self.norm_1 = norm_layer(in_channels)
         self.mapping = nn.Linear(in_features=in_channels, out_features=2 * in_channels, bias=True)
         self.gconv = nn.Parameter(torch.zeros(num_heads // (2 * 2), num_points, num_points))
@@ -214,20 +205,11 @@ class SkateFormerBlock(nn.Module):
         # Skate-MSA
         split_f_attn = torch.chunk(f_attn, len(self.partition_function), dim=1)
 
-        # Generate adaptive gates from pooled token features (per-sample)
-        pooled = f_attn.mean(dim=(2, 3))  # B x attn_dim
-        gate_logits = self.gate_mlp(pooled)  # B x 4
-        alphas = torch.softmax(gate_logits, dim=1)  # B x 4, sums to 1 across branches
-
         for i in range(len(self.partition_function)):
             C = split_f_attn[i].shape[1]
             input_partitioned = self.partition_function[i](split_f_attn[i], self.partition_size[i])
             input_partitioned = input_partitioned.view(-1, self.partition_size[i][0] * self.partition_size[i][1], C)
-            # attention output for this partition
-            attn_out = self.reverse_function[i](self.attention[i](input_partitioned), (T, V), self.partition_size[i])
-            # apply adaptive per-sample gate
-            gate = alphas[:, i].view(B, 1, 1, 1)
-            y.append(attn_out * gate)
+            y.append(self.reverse_function[i](self.attention[i](input_partitioned), (T, V), self.partition_size[i]))
 
         output = self.proj(torch.cat(y, dim=1).permute(0, 2, 3, 1).contiguous())
         output = self.proj_drop(output)

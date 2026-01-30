@@ -34,7 +34,7 @@ model: model.SkateFormer.SkateFormer_
 model_args:
   num_classes: 27
   num_people: 2
-  num_points: 24 #25?
+  num_points: 24
   kernel_size: 7
   num_heads: 32
   attn_drop: 0.5
