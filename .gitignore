@@ -5,7 +5,10 @@ __pycache__/
 *.pyd
 
 # ===== Data (NTU, processed files) =====
-data/
+SkateFormer/data/nturgbd_raw/
+SkateFormer/data/ntu/denoised_data/
+SkateFormer/data/ntu/raw_data/
+SkateFormer/data/
 *.npz
 
 # ===== Training outputs =====
