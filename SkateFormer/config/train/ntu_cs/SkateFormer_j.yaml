@@ -1,6 +1,6 @@
 seed: 1
 num_worker: 10
-work_dir: ./work_dir/ntu/cs/SkateFormer_j/2025_12_21
+work_dir: ./work_dir/ntu/cs/SkateFormer_j/2026_3_4_27actions
 
 phase: train
 

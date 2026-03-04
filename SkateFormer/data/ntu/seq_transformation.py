@@ -127,9 +127,9 @@ def align_frames(skes_joints, frames_cnt):
     return aligned_skes_joints
 
 
-def one_hot_vector(labels):
+def one_hot_vector(labels, num_classes):
     num_skes = len(labels)
-    labels_vector = np.zeros((num_skes, 60))
+    labels_vector = np.zeros((num_skes, num_classes))
     for idx, l in enumerate(labels):
         labels_vector[idx, l] = 1
 
@@ -164,11 +164,12 @@ def split_dataset(skes_joints, label, performer, camera, evaluation, save_path):
     test_labels = label[test_indices]
 
     train_x = skes_joints[train_indices]
-    train_y = one_hot_vector(train_labels)
+    num_classes = int(label.max()) + 1
+    train_y = one_hot_vector(train_labels, num_classes)
     test_x = skes_joints[test_indices]
-    test_y = one_hot_vector(test_labels)
+    test_y = one_hot_vector(test_labels, num_classes)
 
-    save_name = 'NTU27_way1_%s.npz' % evaluation
+    save_name = 'NTU%d_%s.npz' % (num_classes, evaluation)
     np.savez(save_name, x_train=train_x, y_train=train_y, x_test=test_x, y_test=test_y)
 
     # Save data into a .h5 file
