@@ -427,10 +427,13 @@ class SkateFormer(nn.Module):
 
     def forward(self, input, index_t):
         B, C, T, V, M = input.shape
+        joint_mask = (input.abs().sum(dim=(1, 2)) > 0).to(dtype=input.dtype)  # B, V, M
+        joint_mask = joint_mask.permute(0, 2, 1).contiguous().view(B, 1, 1, -1)  # B, 1, 1, M*V
 
         output = input.permute(0, 1, 2, 4, 3).contiguous().view(B, C, T, -1)  # [B, C, T, M * V]
         for layer in self.stem:
             output = layer(output)
+        output = output * joint_mask
         if self.index_t:
             te = torch.zeros(B, T, self.embed_dim).to(output.device)  # B, T, C
             div_term = torch.exp(
@@ -441,6 +444,7 @@ class SkateFormer(nn.Module):
             output = output + torch.einsum('b t c, c v -> b c t v', te, self.joint_person_embedding)
         else:
             output = output + self.joint_person_temporal_embedding
+        output = output * joint_mask
         output = self.forward_features(output)
         output = self.forward_head(output)
         return output

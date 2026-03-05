@@ -121,7 +121,8 @@ transform_order = {'ntu': [0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 16, 17, 18, 19,
 
 
 def subtract(data_numpy, p=0.5):
-    joint = random.randint(0, 24)
+    V = data_numpy.shape[2]
+    joint = random.randint(0, V - 1)
 
     C, T, V, M = data_numpy.shape
     if random.random() < p:
@@ -145,6 +146,9 @@ def temporal_flip(data_numpy, index_t, p=0.5):
 
 def spatial_flip(data_numpy, p=0.5):
     if random.random() < p:
+        V = data_numpy.shape[2]
+        if V != 25:
+            return data_numpy.copy()
         index = transform_order['ntu']
         return data_numpy[:, :, index, :]
     else:
@@ -308,6 +312,8 @@ def gaussian_filter(data_numpy, kernel=15, sig_list=[0.1, 2], p=0.5):
 ''' Skeleton AdaIN '''
 def skeleton_adain_bone_length(input, ref): # C T V M
     eps = 1e-5
+    if input.shape[2] != 25 or ref.shape[2] != 25:
+        return input
     center = 1
     ref_c = ref[:, :, center, :]
 
@@ -338,6 +344,8 @@ class joint2bone(nn.Module):
                       (19, 18), (20, 1), (21, 7), (22, 7), (23, 11), (24, 11)]
 
     def __call__(self, joint):
+        if joint.shape[2] != 25:
+            raise ValueError(f'joint2bone expects V=25 joints, got V={joint.shape[2]}')
         bone = np.zeros_like(joint)
         for v1, v2 in self.pairs:
             bone[:, :, v1, :] = joint[:, :, v1, :] - joint[:, :, v2, :]
@@ -356,6 +364,8 @@ class bone2joint(nn.Module):
         self.pairs_6 = [(21, 7), (22, 7), (23, 11), (24, 11)]
 
     def __call__(self, bone, center):
+        if bone.shape[2] != 25:
+            raise ValueError(f'bone2joint expects V=25 joints, got V={bone.shape[2]}')
         joint = np.zeros_like(bone)
         joint[:, :, self.center, :] = center
         for v1, v2 in self.pairs_1:

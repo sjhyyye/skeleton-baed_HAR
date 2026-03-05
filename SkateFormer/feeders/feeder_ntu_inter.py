@@ -8,7 +8,7 @@ from feeders import tools
 class Feeder(Dataset):
     def __init__(self, data_path, label_path=None, p_interval=1, split='train', data_type='j',
                  aug_method='z', intra_p=0.5, inter_p=0.0, window_size=-1,
-                 debug=False, thres=64, uniform=False, partition=False):
+                 debug=False, thres=64, uniform=False, partition=False, joint_indices=None):
 
         self.debug = debug
         self.data_path = data_path
@@ -23,16 +23,36 @@ class Feeder(Dataset):
         self.thres = thres
         self.uniform = uniform
         self.partition = partition
+        self.keep_joint_indices = joint_indices
+        self.num_people = 2
         self.load_data()
-        if partition:
-            self.right_arm = np.array([7, 8, 22, 23]) - 1
-            self.left_arm = np.array([11, 12, 24, 25]) - 1
-            self.right_leg = np.array([13, 14, 15, 16]) - 1
-            self.left_leg = np.array([17, 18, 19, 20]) - 1
-            self.h_torso = np.array([5, 9, 6, 10]) - 1
-            self.w_torso = np.array([2, 3, 1, 4]) - 1
-            self.new_idx = np.concatenate((self.right_arm, self.left_arm, self.right_leg, self.left_leg, self.h_torso, self.w_torso), axis=-1)
-            # except for joint no.21
+        self._init_joint_indices()
+
+    def _init_joint_indices(self):
+        if self.keep_joint_indices is not None:
+            joint_indices = np.array(self.keep_joint_indices, dtype=np.int64).reshape(-1)
+            if joint_indices.size == 0:
+                raise ValueError('joint_indices cannot be empty')
+            if joint_indices.min() >= 1 and joint_indices.max() <= self.num_joints:
+                joint_indices = joint_indices - 1
+            if joint_indices.min() < 0 or joint_indices.max() >= self.num_joints:
+                raise ValueError(f'joint_indices out of range for V={self.num_joints}: {joint_indices.tolist()}')
+            if len(np.unique(joint_indices)) != len(joint_indices):
+                raise ValueError('joint_indices cannot contain duplicates')
+            self.keep_joint_indices = joint_indices
+
+        if self.partition:
+            if self.num_joints != 25:
+                raise ValueError(f'partition=True requires V=25 joints, got V={self.num_joints}.')
+            right_arm = np.array([7, 8, 22, 23]) - 1
+            left_arm = np.array([11, 12, 24, 25]) - 1
+            right_leg = np.array([13, 14, 15, 16]) - 1
+            left_leg = np.array([17, 18, 19, 20]) - 1
+            h_torso = np.array([5, 9, 6, 10]) - 1
+            w_torso = np.array([2, 3, 1, 4]) - 1
+            self.joint_indices = np.concatenate((right_arm, left_arm, right_leg, left_leg, h_torso, w_torso), axis=-1)
+        else:
+            self.joint_indices = None
 
     def load_data(self):
         # data: N C V T M
@@ -63,8 +83,11 @@ class Feeder(Dataset):
             self.sample_name = ['test_' + str(i) for i in range(len(self.data))]
         else:
             raise NotImplementedError('data split only supports train/test')
-        N, T, _ = self.data.shape
-        self.data = self.data.reshape((N, T, 2, 25, 3)).transpose(0, 4, 1, 3, 2)
+        N, T, D = self.data.shape
+        if D % (self.num_people * 3) != 0:
+            raise ValueError(f'Invalid data shape {self.data.shape}; expected last dim divisible by {self.num_people * 3}')
+        self.num_joints = D // (self.num_people * 3)
+        self.data = self.data.reshape((N, T, self.num_people, self.num_joints, 3)).transpose(0, 4, 1, 3, 2)
 
     def __len__(self):
         return len(self.label)
@@ -150,7 +173,13 @@ class Feeder(Dataset):
             data_numpy = data_numpy.copy()
 
         if self.partition:
-            data_numpy = data_numpy[:, :, self.new_idx]
+            data_numpy = data_numpy[:, :, self.joint_indices]
+            if self.keep_joint_indices is not None:
+                keep_mask = np.isin(self.joint_indices, self.keep_joint_indices)
+                data_numpy[:, :, ~keep_mask] = 0
+        else:
+            if self.keep_joint_indices is not None:
+                data_numpy = data_numpy[:, :, self.keep_joint_indices]
 
         return data_numpy, index_t, label, index
 
@@ -166,4 +195,3 @@ def import_class(name):
     for comp in components[1:]:
         mod = getattr(mod, comp)
     return mod
-
