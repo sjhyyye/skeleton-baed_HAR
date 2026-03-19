@@ -18,7 +18,8 @@ train_feeder_args:
   thres: 64
   uniform: True
   partition: True
-  joint_indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24]
+  joint_indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 21]
+  num_people: 1
 
 test_feeder_args:
   data_path: ./data/ntu/NTU27_CS.npz
@@ -28,25 +29,26 @@ test_feeder_args:
   thres: 64
   uniform: True
   partition: True
-  joint_indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24]
+  joint_indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 21]
   debug: False
+  num_people: 1
 
 # model
 model: model.SkateFormer.SkateFormer_
 model_args:
   num_classes: 27
-  num_people: 2
-  num_points: 24
+  num_people: 1
+  num_points: 19
   kernel_size: 7
   num_heads: 32
   attn_drop: 0.5
   head_drop: 0.0
   rel: True
   drop_path: 0.2
-  type_1_size: [8, 8]
-  type_2_size: [8, 12]
-  type_3_size: [8, 8]
-  type_4_size: [8, 12]
+  type_1_size: [8, 19]
+  type_2_size: [8, 19]
+  type_3_size: [8, 19]
+  type_4_size: [8, 19]
   mlp_ratio: 4.0
   index_t: True
 

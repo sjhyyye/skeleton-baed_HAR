@@ -8,7 +8,7 @@ from feeders import tools
 class Feeder(Dataset):
     def __init__(self, data_path, label_path=None, p_interval=1, split='train', data_type='j',
                  aug_method='z', intra_p=0.5, inter_p=0.0, window_size=-1,
-                 debug=False, thres=64, uniform=False, partition=False, joint_indices=None):
+                 debug=False, thres=64, uniform=False, partition=False, joint_indices=None, num_people=2):
 
         self.debug = debug
         self.data_path = data_path
@@ -25,6 +25,9 @@ class Feeder(Dataset):
         self.partition = partition
         self.keep_joint_indices = joint_indices
         self.num_people = 2
+        self.out_num_people = int(num_people)
+        if self.out_num_people not in (1, 2):
+            raise ValueError(f'num_people must be 1 or 2, got {self.out_num_people}')
         self.load_data()
         self._init_joint_indices()
 
@@ -99,6 +102,8 @@ class Feeder(Dataset):
         data_numpy = self.data[index]
         label = self.label[index]
         data_numpy = np.array(data_numpy)
+        if self.out_num_people == 1:
+            data_numpy = data_numpy[:, :, :, :1]
         valid_frame_num = np.sum(data_numpy.sum(0).sum(-1).sum(-1) != 0)
         num_people = np.sum(data_numpy.sum(0).sum(0).sum(0) != 0)
 
@@ -115,7 +120,7 @@ class Feeder(Dataset):
             if p < self.intra_p:
 
                 if 'a' in self.aug_method:
-                    if np.random.rand(1) < 0.5:
+                    if data_numpy.shape[-1] == 2 and np.random.rand(1) < 0.5:
                         data_numpy = data_numpy[:, :, :, np.array([1, 0])]
                 if 'b' in self.aug_method:
                     if num_people == 2:
