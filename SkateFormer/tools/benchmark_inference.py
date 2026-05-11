@@ -150,7 +150,7 @@ def main():
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--window-size", type=int, default=64)
-    parser.add_argument("--num-classes", type=int, default=27)
+    parser.add_argument("--num-classes", type=int, default=60)
     parser.add_argument("--num-people", "--num_people", dest="num_people", type=int, default=1)
     parser.add_argument("--num-points", type=int, required=True)
     parser.add_argument("--kernel-size", type=int, default=7)

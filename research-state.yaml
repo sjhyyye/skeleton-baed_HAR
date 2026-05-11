@@ -1,0 +1,98 @@
+# Research State — Central Project Tracking
+
+project:
+  title: "Early Skeleton Action Recognition with Coarse Intent Supervision and Long-Short Sequence Consistency"
+  question: "How can a skeleton-based action-recognition model make reliable early predictions from partial prefixes, especially at low observation ratios, without frame-level stage annotation or heavy sub-action modeling?"
+  status: active
+  started: "2026-05-06"
+  domain: "computer vision, skeleton-based action recognition, early action recognition"
+
+literature:
+  key_papers: []
+  open_problems:
+    - "How to define a stable early-recognition protocol for skeleton sequences without mixing prefix crop and random crop."
+    - "Whether coarse intent labels provide real low-ratio gains or only act as generic auxiliary supervision."
+    - "Whether full-prefix consistency provides unique value beyond straightforward KD-only baselines."
+    - "How sensitive the final claim is to manual coarse-intent grouping schemes."
+  evidence_gaps:
+    - "The canonical NTU60 early-recognition evaluation path is not yet frozen in code."
+    - "No stable SkateFormer-prefix baseline has been logged under the new early protocol."
+    - "No intent mapping table has been finalized."
+    - "No single-module ablation has yet isolated intent or consistency effects."
+
+hypotheses:
+  - id: H0
+    statement: "If the early-recognition protocol is frozen before major experiments, later comparisons will remain fair and interpretable."
+    status: active
+    motivation: "Prefix cropping, valid-frame counting, interpolation, and ratio scheduling can easily drift and invalidate comparisons."
+    parent: null
+    priority: high
+  - id: H1
+    statement: "Coarse intent labels provide more stable supervision than fine action labels in the low-observation regime and can improve early skeleton recognition."
+    status: active
+    motivation: "Many classes remain ambiguous early but are already separable at a coarser semantic level."
+    parent: null
+    priority: high
+  - id: H2
+    statement: "A full-sequence branch used as a training-time consistency target can stabilize prefix predictions and improve low-ratio performance."
+    status: active
+    motivation: "Partial prefixes underdetermine the final class, so full-sequence guidance may regularize the prediction boundary."
+    parent: null
+    priority: high
+  - id: H3
+    statement: "The combined intent-plus-consistency model will matter most at 0.1 and 0.3 observation ratios."
+    status: active
+    motivation: "The method is only meaningful if it solves the genuinely early regime rather than near-complete observation."
+    parent: null
+    priority: medium
+  - id: H4
+    statement: "The main claim will remain valid under multiple coarse-intent grouping schemes."
+    status: active
+    motivation: "Manual taxonomy design must not become the hidden source of the result."
+    parent: null
+    priority: medium
+
+experiments:
+  proxy_metric: "Per-ratio Top-1 action accuracy under a fixed early-recognition protocol on NTU60."
+  baseline_value: null
+  best_value: null
+  total_runs: 0
+  trajectory: []
+
+outer_loop:
+  cycle: 0
+  last_direction: "pivot_to_early_skeleton"
+  last_reflection: "The previous acceleration-and-deployment plan is no longer the main line. The project should now lock the early-recognition protocol first, then establish prefix baselines, then validate intent and consistency separately before combining them."
+
+plan:
+  primary_benchmark:
+    name: "NTU60 early skeleton action recognition"
+    status: locked_for_current_phase
+    note: "Use XSub first, then XView. NTU120 is deferred until the NTU60 story is stable."
+  secondary_benchmark:
+    name: "NTU120 early extension"
+    status: deferred
+    note: "This is a later robustness study, not part of the current baseline-lock phase."
+  current_phase: "H0_protocol_freeze"
+  plan_document: "research-plan.md"
+  milestones:
+    - "Freeze prefix construction and observation-ratio protocol."
+    - "Build the SkateFormer-prefix baseline."
+    - "Validate intent-only, consistency-only, and KD-only separately."
+    - "Train and evaluate the full joint model."
+    - "Stress-test the claim under multiple intent mappings and XView."
+  next_actions:
+    - "Freeze valid-frame counting, prefix crop, interpolation, and fixed-length handling."
+    - "Draft at least two coarse-intent mapping schemes for NTU60."
+    - "Run the canonical SkateFormer-prefix baseline on NTU60 XSub."
+    - "Add multi-ratio training under the same protocol."
+    - "Only after the baseline is stable, start single-module ablations."
+
+workspace:
+  findings: "findings.md"
+  log: "research-log.md"
+  runtime_env: "conda env skateformer"
+  literature_dir: "literature/"
+  experiments_dir: "experiments/"
+  to_human_dir: "to_human/"
+  paper_dir: "paper/"
