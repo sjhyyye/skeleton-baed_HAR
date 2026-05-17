@@ -1,0 +1,61 @@
+ntu60_id,ntu60_label,coarse10_index,coarse10_id,coarse10_name,coarse8_index,coarse8_id,coarse8_name,rule_basis,note
+1,drink water,0,C10-01,eat_drink,0,C8-01,self_care_and_dressing,consumption,direct ingestion behavior
+2,eat meal/snack,0,C10-01,eat_drink,0,C8-01,self_care_and_dressing,consumption,direct ingestion behavior
+3,brushing teeth,1,C10-02,personal_grooming,0,C8-01,self_care_and_dressing,grooming,self-cleaning behavior
+4,brushing hair,1,C10-02,personal_grooming,0,C8-01,self_care_and_dressing,grooming,self-grooming behavior
+5,drop,2,C10-04,object_manipulation,1,C8-02,object_manipulation,object_handling,object release/manipulation
+6,pickup,2,C10-04,object_manipulation,1,C8-02,object_manipulation,object_handling,object acquisition/manipulation
+7,throw,2,C10-04,object_manipulation,1,C8-02,object_manipulation,object_handling,object-directed force application
+8,sitting down,3,C10-05,posture_locomotion,2,C8-03,posture_locomotion,posture_transition,body posture transition
+9,standing up (from sitting position),3,C10-05,posture_locomotion,2,C8-03,posture_locomotion,posture_transition,body posture transition
+10,clapping,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,communicative or affective hand gesture
+11,reading,5,C10-07,reading_writing_device_use,4,C8-05,reading_writing_device_use,document_device_use,document-focused activity
+12,writing,5,C10-07,reading_writing_device_use,4,C8-05,reading_writing_device_use,document_device_use,document-focused activity
+13,tear up paper,2,C10-04,object_manipulation,1,C8-02,object_manipulation,object_handling,physical manipulation of a paper object
+14,wear jacket,6,C10-03,dressing_accessories,0,C8-01,self_care_and_dressing,dressing,putting on clothing
+15,take off jacket,6,C10-03,dressing_accessories,0,C8-01,self_care_and_dressing,dressing,removing clothing
+16,wear a shoe,6,C10-03,dressing_accessories,0,C8-01,self_care_and_dressing,dressing,putting on clothing/accessory
+17,take off a shoe,6,C10-03,dressing_accessories,0,C8-01,self_care_and_dressing,dressing,removing clothing/accessory
+18,wear on glasses,6,C10-03,dressing_accessories,0,C8-01,self_care_and_dressing,dressing,putting on accessory
+19,take off glasses,6,C10-03,dressing_accessories,0,C8-01,self_care_and_dressing,dressing,removing accessory
+20,put on a hat/cap,6,C10-03,dressing_accessories,0,C8-01,self_care_and_dressing,dressing,putting on accessory
+21,take off a hat/cap,6,C10-03,dressing_accessories,0,C8-01,self_care_and_dressing,dressing,removing accessory
+22,cheer up,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,affective celebratory gesture
+23,hand waving,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,communicative waving gesture
+24,kicking something,2,C10-04,object_manipulation,1,C8-02,object_manipulation,object_handling,interaction target is an object rather than a person
+25,reach into pocket,2,C10-04,object_manipulation,1,C8-02,object_manipulation,object_handling,self-object retrieval/manipulation
+26,hopping (one foot jumping),3,C10-05,posture_locomotion,2,C8-03,posture_locomotion,locomotion,gross lower-body movement
+27,jump up,3,C10-05,posture_locomotion,2,C8-03,posture_locomotion,locomotion,gross lower-body movement
+28,make a phone call/answer phone,5,C10-07,reading_writing_device_use,4,C8-05,reading_writing_device_use,document_device_use,phone-mediated communication
+29,playing with phone/tablet,5,C10-07,reading_writing_device_use,4,C8-05,reading_writing_device_use,document_device_use,handheld device interaction
+30,typing on a keyboard,5,C10-07,reading_writing_device_use,4,C8-05,reading_writing_device_use,document_device_use,device-oriented manual input
+31,pointing to something with finger,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,deictic communicative gesture
+32,taking a selfie,5,C10-07,reading_writing_device_use,4,C8-05,reading_writing_device_use,document_device_use,camera/phone-mediated action
+33,check time (from watch),5,C10-07,reading_writing_device_use,4,C8-05,reading_writing_device_use,document_device_use,wearable-device checking behavior
+34,rub two hands together,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,salient upper-body hand gesture without external object target
+35,nod head/bow,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,head-based communicative gesture
+36,shake head,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,head-based communicative gesture
+37,wipe face,1,C10-02,personal_grooming,0,C8-01,self_care_and_dressing,grooming,self-cleaning/self-care motion
+38,salute,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,conventional symbolic gesture
+39,put the palms together,4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,conventional symbolic gesture
+40,cross hands in front (say stop),4,C10-06,expressive_gestures,3,C8-04,expressive_gestures,expressive_gesture,conventional prohibitive gesture
+41,sneeze/cough,7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,physiological or discomfort-related behavior
+42,staggering,7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,abnormal balance/condition cue
+43,falling,7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,abnormal body-state event
+44,touch head (headache),7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,self-touch indicating discomfort
+45,touch chest (stomachache/heart pain),7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,self-touch indicating discomfort
+46,touch back (backache),7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,self-touch indicating discomfort
+47,touch neck (neckache),7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,self-touch indicating discomfort
+48,nausea or vomiting condition,7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,physiological distress cue
+49,use a fan (with hand or paper)/feeling warm,7,C10-08,health_body_state,5,C8-06,health_body_state,body_state,temperature/discomfort regulation behavior
+50,punching/slapping other person,8,C10-10,aggressive_interaction,6,C8-08,aggressive_interaction,interpersonal_aggressive,aggressive contact toward another person
+51,kicking other person,8,C10-10,aggressive_interaction,6,C8-08,aggressive_interaction,interpersonal_aggressive,aggressive contact toward another person
+52,pushing other person,8,C10-10,aggressive_interaction,6,C8-08,aggressive_interaction,interpersonal_aggressive,aggressive force toward another person
+53,pat on back of other person,9,C10-09,interpersonal_interaction,7,C8-07,interpersonal_interaction,interpersonal_non_aggressive,social touch toward another person
+54,point finger at the other person,9,C10-09,interpersonal_interaction,7,C8-07,interpersonal_interaction,interpersonal_non_aggressive,person-directed deictic interaction
+55,hugging other person,9,C10-09,interpersonal_interaction,7,C8-07,interpersonal_interaction,interpersonal_non_aggressive,affiliative social contact
+56,giving something to other person,9,C10-09,interpersonal_interaction,7,C8-07,interpersonal_interaction,interpersonal_non_aggressive,transfer action directed to another person
+57,touch other person's pocket,9,C10-09,interpersonal_interaction,7,C8-07,interpersonal_interaction,interpersonal_non_aggressive,person-directed object access
+58,handshaking,9,C10-09,interpersonal_interaction,7,C8-07,interpersonal_interaction,interpersonal_non_aggressive,conventional social interaction
+59,walking towards each other,9,C10-09,interpersonal_interaction,7,C8-07,interpersonal_interaction,interpersonal_non_aggressive,relational motion defined by another person
+60,walking apart from each other,9,C10-09,interpersonal_interaction,7,C8-07,interpersonal_interaction,interpersonal_non_aggressive,relational motion defined by another person

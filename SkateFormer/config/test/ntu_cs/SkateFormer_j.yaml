@@ -1,9 +1,9 @@
 seed: 1
 num_worker: 4
-work_dir: ./work_dir/ntu/cs/SkateFormer_j/
+work_dir: ./work_dir/ntu/cs/SkateFormer_j/2026_5_13_60actions_24p
 
 phase: test
-weights: ./pretrained/ntu60_CSub/SkateFormer_j.pt
+weights: null
 
 # feeder
 feeder: feeders.feeder_ntu.Feeder

@@ -1,0 +1,61 @@
+ntu60_id,ntu60_label,semantic_coarse10_id,semantic_coarse10_name,semantic_coarse8_id,semantic_coarse8_name,trajectory_coarse10_id,trajectory_coarse10_name,trajectory_coarse8_id,trajectory_coarse8_name,trajectory_dominant_parts
+1,drink water,C10-01,eat_drink,C8-01,self_care_and_dressing,M10-01,hand_to_head_face,M8-01,self_upper_body_actions,hand+head
+2,eat meal/snack,C10-01,eat_drink,C8-01,self_care_and_dressing,M10-01,hand_to_head_face,M8-01,self_upper_body_actions,hand+head
+3,brushing teeth,C10-02,personal_grooming,C8-01,self_care_and_dressing,M10-01,hand_to_head_face,M8-01,self_upper_body_actions,hand+head
+4,brushing hair,C10-02,personal_grooming,C8-01,self_care_and_dressing,M10-01,hand_to_head_face,M8-01,self_upper_body_actions,hand+head
+5,drop,C10-04,object_manipulation,C8-02,object_manipulation,M10-05,object_directed_limb_action,M8-04,object_directed_limb_action,arm+hand
+6,pickup,C10-04,object_manipulation,C8-02,object_manipulation,M10-05,object_directed_limb_action,M8-04,object_directed_limb_action,arm+hand+trunk
+7,throw,C10-04,object_manipulation,C8-02,object_manipulation,M10-05,object_directed_limb_action,M8-04,object_directed_limb_action,arm+trunk
+8,sitting down,C10-05,posture_locomotion,C8-03,posture_locomotion,M10-06,posture_transition_locomotion,M8-05,posture_transition_locomotion,legs+trunk
+9,standing up (from sitting position),C10-05,posture_locomotion,C8-03,posture_locomotion,M10-06,posture_transition_locomotion,M8-05,posture_transition_locomotion,legs+trunk
+10,clapping,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,both_hands+arms
+11,reading,C10-07,reading_writing_device_use,C8-05,reading_writing_device_use,M10-04,fine_manual_front_object,M8-03,fine_manual_front_object,hand+forearm+head
+12,writing,C10-07,reading_writing_device_use,C8-05,reading_writing_device_use,M10-04,fine_manual_front_object,M8-03,fine_manual_front_object,hand+forearm
+13,tear up paper,C10-04,object_manipulation,C8-02,object_manipulation,M10-04,fine_manual_front_object,M8-03,fine_manual_front_object,both_hands
+14,wear jacket,C10-03,dressing_accessories,C8-01,self_care_and_dressing,M10-03,dressing_accessory_motion,M8-02,dressing_accessory_motion,both_arms+trunk
+15,take off jacket,C10-03,dressing_accessories,C8-01,self_care_and_dressing,M10-03,dressing_accessory_motion,M8-02,dressing_accessory_motion,both_arms+trunk
+16,wear a shoe,C10-03,dressing_accessories,C8-01,self_care_and_dressing,M10-03,dressing_accessory_motion,M8-02,dressing_accessory_motion,hand+leg+trunk
+17,take off a shoe,C10-03,dressing_accessories,C8-01,self_care_and_dressing,M10-03,dressing_accessory_motion,M8-02,dressing_accessory_motion,hand+leg+trunk
+18,wear on glasses,C10-03,dressing_accessories,C8-01,self_care_and_dressing,M10-03,dressing_accessory_motion,M8-02,dressing_accessory_motion,hands+head
+19,take off glasses,C10-03,dressing_accessories,C8-01,self_care_and_dressing,M10-03,dressing_accessory_motion,M8-02,dressing_accessory_motion,hands+head
+20,put on a hat/cap,C10-03,dressing_accessories,C8-01,self_care_and_dressing,M10-03,dressing_accessory_motion,M8-02,dressing_accessory_motion,hands+head
+21,take off a hat/cap,C10-03,dressing_accessories,C8-01,self_care_and_dressing,M10-03,dressing_accessory_motion,M8-02,dressing_accessory_motion,hands+head
+22,cheer up,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,arms+hands
+23,hand waving,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,arm+hand
+24,kicking something,C10-04,object_manipulation,C8-02,object_manipulation,M10-05,object_directed_limb_action,M8-04,object_directed_limb_action,leg+trunk
+25,reach into pocket,C10-04,object_manipulation,C8-02,object_manipulation,M10-02,torso_self_touch_reach,M8-01,self_upper_body_actions,hand+torso
+26,hopping (one foot jumping),C10-05,posture_locomotion,C8-03,posture_locomotion,M10-06,posture_transition_locomotion,M8-05,posture_transition_locomotion,leg+trunk
+27,jump up,C10-05,posture_locomotion,C8-03,posture_locomotion,M10-06,posture_transition_locomotion,M8-05,posture_transition_locomotion,leg+trunk
+28,make a phone call/answer phone,C10-07,reading_writing_device_use,C8-05,reading_writing_device_use,M10-04,fine_manual_front_object,M8-03,fine_manual_front_object,hand+head
+29,playing with phone/tablet,C10-07,reading_writing_device_use,C8-05,reading_writing_device_use,M10-04,fine_manual_front_object,M8-03,fine_manual_front_object,hands+forearms
+30,typing on a keyboard,C10-07,reading_writing_device_use,C8-05,reading_writing_device_use,M10-04,fine_manual_front_object,M8-03,fine_manual_front_object,hands+forearms
+31,pointing to something with finger,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,arm+hand
+32,taking a selfie,C10-07,reading_writing_device_use,C8-05,reading_writing_device_use,M10-04,fine_manual_front_object,M8-03,fine_manual_front_object,arm+hand+head
+33,check time (from watch),C10-07,reading_writing_device_use,C8-05,reading_writing_device_use,M10-04,fine_manual_front_object,M8-03,fine_manual_front_object,hands+forearms
+34,rub two hands together,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,both_hands
+35,nod head/bow,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,head+trunk
+36,shake head,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,head
+37,wipe face,C10-02,personal_grooming,C8-01,self_care_and_dressing,M10-01,hand_to_head_face,M8-01,self_upper_body_actions,hand+head
+38,salute,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,arm+head
+39,put the palms together,C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,both_hands
+40,cross hands in front (say stop),C10-06,expressive_gestures,C8-04,expressive_gestures,M10-07,symbolic_expressive_gesture,M8-06,symbolic_expressive_gesture,both_arms
+41,sneeze/cough,C10-08,health_body_state,C8-06,health_body_state,M10-01,hand_to_head_face,M8-01,self_upper_body_actions,head+hand+trunk
+42,staggering,C10-08,health_body_state,C8-06,health_body_state,M10-08,unstable_whole_body_state,M8-07,unstable_or_abnormal_state,legs+trunk
+43,falling,C10-08,health_body_state,C8-06,health_body_state,M10-08,unstable_whole_body_state,M8-07,unstable_or_abnormal_state,whole_body
+44,touch head (headache),C10-08,health_body_state,C8-06,health_body_state,M10-01,hand_to_head_face,M8-01,self_upper_body_actions,hand+head
+45,touch chest (stomachache/heart pain),C10-08,health_body_state,C8-06,health_body_state,M10-02,torso_self_touch_reach,M8-01,self_upper_body_actions,hand+torso
+46,touch back (backache),C10-08,health_body_state,C8-06,health_body_state,M10-02,torso_self_touch_reach,M8-01,self_upper_body_actions,hand+torso
+47,touch neck (neckache),C10-08,health_body_state,C8-06,health_body_state,M10-02,torso_self_touch_reach,M8-01,self_upper_body_actions,hand+neck
+48,nausea or vomiting condition,C10-08,health_body_state,C8-06,health_body_state,M10-02,torso_self_touch_reach,M8-01,self_upper_body_actions,hand+torso+head
+49,use a fan (with hand or paper)/feeling warm,C10-08,health_body_state,C8-06,health_body_state,M10-01,hand_to_head_face,M8-01,self_upper_body_actions,arm+hand+head
+50,punching/slapping other person,C10-10,aggressive_interaction,C8-08,aggressive_interaction,M10-10,interpersonal_aggressive,M8-08,interpersonal_actions,arm+trunk
+51,kicking other person,C10-10,aggressive_interaction,C8-08,aggressive_interaction,M10-10,interpersonal_aggressive,M8-08,interpersonal_actions,leg+trunk
+52,pushing other person,C10-10,aggressive_interaction,C8-08,aggressive_interaction,M10-10,interpersonal_aggressive,M8-08,interpersonal_actions,arms+trunk
+53,pat on back of other person,C10-09,interpersonal_interaction,C8-07,interpersonal_interaction,M10-09,interpersonal_non_aggressive,M8-08,interpersonal_actions,arm+trunk
+54,point finger at the other person,C10-09,interpersonal_interaction,C8-07,interpersonal_interaction,M10-09,interpersonal_non_aggressive,M8-08,interpersonal_actions,arm+hand
+55,hugging other person,C10-09,interpersonal_interaction,C8-07,interpersonal_interaction,M10-09,interpersonal_non_aggressive,M8-08,interpersonal_actions,arms+trunk
+56,giving something to other person,C10-09,interpersonal_interaction,C8-07,interpersonal_interaction,M10-09,interpersonal_non_aggressive,M8-08,interpersonal_actions,arm+hand
+57,touch other person's pocket,C10-09,interpersonal_interaction,C8-07,interpersonal_interaction,M10-09,interpersonal_non_aggressive,M8-08,interpersonal_actions,hand+trunk
+58,handshaking,C10-09,interpersonal_interaction,C8-07,interpersonal_interaction,M10-09,interpersonal_non_aggressive,M8-08,interpersonal_actions,arm+hand
+59,walking towards each other,C10-09,interpersonal_interaction,C8-07,interpersonal_interaction,M10-09,interpersonal_non_aggressive,M8-08,interpersonal_actions,legs+trunk
+60,walking apart from each other,C10-09,interpersonal_interaction,C8-07,interpersonal_interaction,M10-09,interpersonal_non_aggressive,M8-08,interpersonal_actions,legs+trunk

@@ -8,7 +8,8 @@ from feeders import tools
 class Feeder(Dataset):
     def __init__(self, data_path, label_path=None, p_interval=1, split='train', data_type='j',
                  aug_method='z', intra_p=0.5, inter_p=0.0, window_size=-1,
-                 debug=False, thres=64, uniform=False, partition=False, joint_indices=None, num_people=2):
+                 debug=False, thres=64, uniform=False, partition=False, joint_indices=None, num_people=2,
+                 temporal_crop_mode='crop', observation_ratio=None):
 
         self.debug = debug
         self.data_path = data_path
@@ -25,6 +26,8 @@ class Feeder(Dataset):
         self.partition = partition
         self.keep_joint_indices = joint_indices
         self.num_people = 2
+        self.temporal_crop_mode = temporal_crop_mode
+        self.observation_ratio = self._normalize_observation_ratio(observation_ratio)
         self.out_num_people = int(num_people)
         if self.out_num_people not in (1, 2):
             raise ValueError(f'num_people must be 1 or 2, got {self.out_num_people}')
@@ -56,6 +59,43 @@ class Feeder(Dataset):
             self.joint_indices = np.concatenate((right_arm, left_arm, right_leg, left_leg, h_torso, w_torso), axis=-1)
         else:
             self.joint_indices = None
+
+    def _normalize_observation_ratio(self, observation_ratio):
+        if observation_ratio is None:
+            return None
+        if isinstance(observation_ratio, (int, float)):
+            ratios = [float(observation_ratio)]
+        else:
+            ratios = [float(r) for r in np.array(observation_ratio).reshape(-1).tolist()]
+        if len(ratios) == 0:
+            raise ValueError('observation_ratio cannot be empty')
+        for ratio in ratios:
+            if ratio <= 0 or ratio > 1:
+                raise ValueError(f'observation_ratio must be in (0, 1], got {ratio}')
+        return ratios
+
+    def _sample_observation_ratio(self):
+        if self.observation_ratio is not None:
+            ratios = self.observation_ratio
+            if self.split == 'train' and len(ratios) > 1:
+                return float(random.choice(ratios))
+            if len(ratios) > 1:
+                raise ValueError(
+                    'temporal_crop_mode=prefix requires a single observation_ratio for non-train splits'
+                )
+            return float(ratios[0])
+
+        if isinstance(self.p_interval, (int, float)):
+            return float(self.p_interval)
+
+        ratios = [float(r) for r in np.array(self.p_interval).reshape(-1).tolist()]
+        if len(ratios) == 1:
+            return ratios[0]
+        if len(ratios) == 2 and self.split == 'train':
+            return float(np.random.rand(1) * (ratios[1] - ratios[0]) + ratios[0])
+        raise ValueError(
+            'temporal_crop_mode=prefix requires observation_ratio or a single p_interval value for non-train splits'
+        )
 
     def load_data(self):
         # data: N C V T M
@@ -91,12 +131,23 @@ class Feeder(Dataset):
         valid_frame_num = np.sum(data_numpy.sum(0).sum(-1).sum(-1) != 0)
         num_people = np.sum(data_numpy.sum(0).sum(0).sum(0) != 0)
 
-        if self.uniform:
-            data_numpy, index_t = tools.valid_crop_uniform(data_numpy, valid_frame_num, self.p_interval,
-                                                           self.window_size, self.thres)
+        if self.temporal_crop_mode == 'prefix':
+            observation_ratio = self._sample_observation_ratio()
+            if self.uniform:
+                data_numpy, index_t = tools.valid_prefix_uniform(
+                    data_numpy, valid_frame_num, observation_ratio, self.window_size, self.thres
+                )
+            else:
+                data_numpy, index_t = tools.valid_prefix_resize(
+                    data_numpy, valid_frame_num, observation_ratio, self.window_size, self.thres
+                )
         else:
-            data_numpy, index_t = tools.valid_crop_resize(data_numpy, valid_frame_num, self.p_interval,
-                                                          self.window_size, self.thres)
+            if self.uniform:
+                data_numpy, index_t = tools.valid_crop_uniform(data_numpy, valid_frame_num, self.p_interval,
+                                                               self.window_size, self.thres)
+            else:
+                data_numpy, index_t = tools.valid_crop_resize(data_numpy, valid_frame_num, self.p_interval,
+                                                              self.window_size, self.thres)
 
         if self.split == 'train':
             # intra-instance augmentation

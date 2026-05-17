@@ -5,8 +5,11 @@ import os.path as osp
 import numpy as np
 import pickle
 import logging
-import h5py
-from sklearn.model_selection import train_test_split
+
+try:
+    from sklearn.model_selection import train_test_split
+except ImportError:
+    train_test_split = None
 
 root_path = './'
 stat_path = osp.join(root_path, 'statistics')
@@ -127,9 +130,9 @@ def align_frames(skes_joints, frames_cnt):
     return aligned_skes_joints
 
 
-def one_hot_vector(labels, num_classes):
+def one_hot_vector(labels):
     num_skes = len(labels)
-    labels_vector = np.zeros((num_skes, num_classes))
+    labels_vector = np.zeros((num_skes, 60))
     for idx, l in enumerate(labels):
         labels_vector[idx, l] = 1
 
@@ -143,6 +146,8 @@ def split_train_val(train_indices, method='sklearn', ratio=0.05):
 
     """
     if method == 'sklearn':
+        if train_test_split is None:
+            raise ImportError('scikit-learn is required when method="sklearn"')
         return train_test_split(train_indices, test_size=ratio, random_state=10000)
     else:
         np.random.seed(10000)
@@ -164,12 +169,11 @@ def split_dataset(skes_joints, label, performer, camera, evaluation, save_path):
     test_labels = label[test_indices]
 
     train_x = skes_joints[train_indices]
-    num_classes = int(label.max()) + 1
-    train_y = one_hot_vector(train_labels, num_classes)
+    train_y = one_hot_vector(train_labels)
     test_x = skes_joints[test_indices]
-    test_y = one_hot_vector(test_labels, num_classes)
+    test_y = one_hot_vector(test_labels)
 
-    save_name = 'NTU%d_%s.npz' % (num_classes, evaluation)
+    save_name = 'NTU60_%s.npz' % evaluation
     np.savez(save_name, x_train=train_x, y_train=train_y, x_test=test_x, y_test=test_y)
 
     # Save data into a .h5 file
@@ -203,34 +207,34 @@ def get_indices(performer, camera, evaluation='CS'):
         # Get indices of test data
         for idx in test_ids:
             temp = np.where(performer == idx)[0]  # 0-based index
-            test_indices = np.hstack((test_indices, temp)).astype(np.int)
+            test_indices = np.hstack((test_indices, temp)).astype(int)
 
         # Get indices of training data
         for train_id in train_ids:
             temp = np.where(performer == train_id)[0]  # 0-based index
-            train_indices = np.hstack((train_indices, temp)).astype(np.int)
+            train_indices = np.hstack((train_indices, temp)).astype(int)
     else:  # Cross View (Camera IDs)
         train_ids = [2, 3]
         test_ids = 1
         # Get indices of test data
         temp = np.where(camera == test_ids)[0]  # 0-based index
-        test_indices = np.hstack((test_indices, temp)).astype(np.int)
+        test_indices = np.hstack((test_indices, temp)).astype(int)
 
         # Get indices of training data
         for train_id in train_ids:
             temp = np.where(camera == train_id)[0]  # 0-based index
-            train_indices = np.hstack((train_indices, temp)).astype(np.int)
+            train_indices = np.hstack((train_indices, temp)).astype(int)
 
     return train_indices, test_indices
 
 
 if __name__ == '__main__':
-    camera = np.loadtxt(camera_file, dtype=np.int)  # camera id: 1, 2, 3
-    performer = np.loadtxt(performer_file, dtype=np.int)  # subject id: 1~40
-    label = np.loadtxt(label_file, dtype=np.int) - 1  # action label: 0~59
+    camera = np.loadtxt(camera_file, dtype=int)  # camera id: 1, 2, 3
+    performer = np.loadtxt(performer_file, dtype=int)  # subject id: 1~40
+    label = np.loadtxt(label_file, dtype=int) - 1  # action label: 0~59
 
-    frames_cnt = np.loadtxt(frames_file, dtype=np.int)  # frames_cnt
-    skes_name = np.loadtxt(skes_name_file, dtype=np.string_)
+    frames_cnt = np.loadtxt(frames_file, dtype=int)  # frames_cnt
+    skes_name = np.loadtxt(skes_name_file, dtype=np.bytes_)
 
     with open(raw_skes_joints_pkl, 'rb') as fr:
         skes_joints = pickle.load(fr)  # a list

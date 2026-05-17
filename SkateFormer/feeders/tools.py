@@ -7,6 +7,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def _resize_temporal_clip(data_numpy, index_t, window):
+    C, _, V, M = data_numpy.shape
+    data = torch.tensor(data_numpy, dtype=torch.float)
+    index_t = torch.tensor(index_t, dtype=torch.float)
+    data = data.permute(2, 3, 0, 1).contiguous().view(V * M, C, -1)
+    if data.shape[-1] != window:
+        data = F.interpolate(data, size=window, mode='linear', align_corners=False)
+        index_t = F.interpolate(index_t[None, None, :], size=window, mode='linear', align_corners=False).squeeze()
+    data = data.contiguous().view(V, M, C, window).permute(2, 3, 0, 1).contiguous().numpy()
+    return data, index_t.numpy()
+
+
+def _resolve_prefix_length(valid_size, observation_ratio):
+    prefix_length = int(np.floor(valid_size * observation_ratio))
+    prefix_length = max(prefix_length, 1)
+    prefix_length = min(prefix_length, valid_size)
+    return prefix_length
+
+
 def valid_crop_resize(data_numpy, valid_frame_num, p_interval, window, thres):
     # input: C,T,V,M
     C, T, V, M = data_numpy.shape
@@ -41,6 +60,20 @@ def valid_crop_resize(data_numpy, valid_frame_num, p_interval, window, thres):
     index_t = F.interpolate(index_t[None, None, :], size=window, mode='linear', align_corners=False).squeeze()
     index_t = 2 * index_t / valid_size - 1
     return data, index_t.numpy()
+
+
+def valid_prefix_resize(data_numpy, valid_frame_num, observation_ratio, window, thres):
+    del thres
+    C, T, V, M = data_numpy.shape
+    begin = 0
+    end = valid_frame_num
+    valid_size = end - begin
+    prefix_length = _resolve_prefix_length(valid_size, observation_ratio)
+    data = data_numpy[:, begin:begin + prefix_length, :, :]
+    index_t = np.arange(begin, begin + prefix_length, dtype=np.float32)
+    data, index_t = _resize_temporal_clip(data, index_t, window)
+    index_t = 2 * index_t / valid_size - 1
+    return data, index_t
 
 
 def valid_crop_uniform(data_numpy, valid_frame_num, p_interval, window, thres):
@@ -106,6 +139,27 @@ def valid_crop_uniform(data_numpy, valid_frame_num, p_interval, window, thres):
     data = data.contiguous().view(V, M, C, window).permute(2, 3, 0, 1).contiguous().numpy()
     index_t = 2 * index_t / valid_size - 1
     return data, index_t.numpy()
+
+
+def valid_prefix_uniform(data_numpy, valid_frame_num, observation_ratio, window, thres):
+    del thres
+    C, T, V, M = data_numpy.shape
+    begin = 0
+    end = valid_frame_num
+    valid_size = end - begin
+    prefix_length = _resolve_prefix_length(valid_size, observation_ratio)
+
+    if prefix_length < window:
+        inds = np.arange(prefix_length)
+    else:
+        bids = np.array([i * prefix_length // window for i in range(window + 1)])
+        inds = bids[:window]
+
+    data = data_numpy[:, begin + inds, :, :]
+    index_t = begin + inds.astype(np.float32)
+    data, index_t = _resize_temporal_clip(data, index_t, window)
+    index_t = 2 * index_t / valid_size - 1
+    return data, index_t
 
 
 def scale(data_numpy, scale=0.2, p=0.5):
