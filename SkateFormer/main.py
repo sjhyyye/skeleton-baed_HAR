@@ -160,9 +160,9 @@ class Processor():
         self.lr = self.arg.base_lr
         self.best_acc = 0
         self.best_acc_epoch = 0
-        self.model = self.model.cuda(self.output_device)
+        self.model = self.model.to(self.device)
 
-        if type(self.arg.device) is list:
+        if self.device.type == 'cuda' and type(self.arg.device) is list:
             if len(self.arg.device) > 1:
                 self.model = nn.DataParallel(
                     self.model,
@@ -191,14 +191,18 @@ class Processor():
     def load_model(self):
         output_device = self.arg.device[0] if type(self.arg.device) is list else self.arg.device
         self.output_device = output_device
+        if torch.cuda.is_available():
+            self.device = torch.device(f'cuda:{output_device}')
+        else:
+            self.device = torch.device('cpu')
         Model = import_class(self.arg.model)
         shutil.copy2(inspect.getfile(Model), self.arg.work_dir)
         print(Model)
         self.model = Model(**self.arg.model_args)
         if self.arg.loss_type == 'CE':
-            self.loss = nn.CrossEntropyLoss().cuda(output_device)
+            self.loss = nn.CrossEntropyLoss().to(self.device)
         else:
-            self.loss = LabelSmoothingCrossEntropy(smoothing=0.1).cuda(output_device)
+            self.loss = LabelSmoothingCrossEntropy(smoothing=0.1).to(self.device)
 
         if self.arg.weights:
             #self.global_step = int(arg.weights[:-3].split('-')[-1])
@@ -207,9 +211,9 @@ class Processor():
                 with open(self.arg.weights, 'r') as f:
                     weights = pickle.load(f)
             else:
-                weights = torch.load(self.arg.weights)
+                weights = torch.load(self.arg.weights, map_location=self.device)
 
-            weights = OrderedDict([[k.split('module.')[-1], v.cuda(output_device)] for k, v in weights.items()])
+            weights = OrderedDict([[k.split('module.')[-1], v.to(self.device)] for k, v in weights.items()])
 
             keys = list(weights.keys())
             for w in self.arg.ignore_weights:
@@ -318,9 +322,9 @@ class Processor():
             self.lr_scheduler.step_update(self.global_step)
             self.global_step += 1
             with torch.no_grad():
-                data = data.float().cuda(self.output_device)
-                index_t = index_t.float().cuda(self.output_device)
-                label = label.long().cuda(self.output_device)
+                data = data.float().to(self.device)
+                index_t = index_t.float().to(self.device)
+                label = label.long().to(self.device)
             timer['dataloader'] += self.split_time()
 
             # forward
@@ -383,9 +387,9 @@ class Processor():
             for batch_idx, (data, index_t, label, index) in enumerate(process):
                 label_list.append(label)
                 with torch.no_grad():
-                    data = data.float().cuda(self.output_device)
-                    index_t = index_t.float().cuda(self.output_device)
-                    label = label.long().cuda(self.output_device)
+                    data = data.float().to(self.device)
+                    index_t = index_t.float().to(self.device)
+                    label = label.long().to(self.device)
                     output = self.model(data, index_t)
                     loss = self.loss(output, label)
                     score_frag.append(output.data.cpu().numpy())
@@ -461,10 +465,10 @@ class Processor():
 
             # test the best model
             weights_path = glob.glob(os.path.join(self.arg.work_dir, 'runs-' + str(self.best_acc_epoch) + '*'))[0]
-            weights = torch.load(weights_path)
-            if type(self.arg.device) is list:
+            weights = torch.load(weights_path, map_location=self.device)
+            if self.device.type == 'cuda' and type(self.arg.device) is list:
                 if len(self.arg.device) > 1:
-                    weights = OrderedDict([['module.' + k, v.cuda(self.output_device)] for k, v in weights.items()])
+                    weights = OrderedDict([['module.' + k, v.to(self.device)] for k, v in weights.items()])
             self.model.load_state_dict(weights)
 
             wf = weights_path.replace('.pt', '_wrong.txt')
@@ -516,4 +520,3 @@ if __name__ == '__main__':
     init_seed(arg.seed)
     processor = Processor(arg)
     processor.start()
-
