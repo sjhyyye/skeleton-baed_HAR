@@ -2,7 +2,7 @@
 
 This repository is organized around one primary research line: early skeleton action recognition with `SkateFormer` on `NTU60`, using coarse-grained auxiliary supervision and long-short sequence consistency as the main modeling ideas.
 
-The current project phase is protocol freeze and baseline construction, not large-scale result reporting. The first priority is to lock a clean prefix-based evaluation path, establish a stable `SkateFormer-prefix` baseline, and then test `intent-only`, `consistency-only`, and `KD-only` separately before training a joint model.
+The current project phase is single-module ablation on top of a substantially completed `H1` baseline family. The repository now contains single-ratio prefix baselines at `r=0.1` and `r=0.3`, plus a six-ratio `prefix_multi` baseline on `NTU60 XSub`; `prefix_multi` is currently stronger than matched single-ratio training at both `0.1` and `0.3`. The next priority is to test `KD-only` and `consistency-only` cleanly before training any joint model.
 
 ## Current Focus
 

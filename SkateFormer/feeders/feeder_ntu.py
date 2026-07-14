@@ -126,6 +126,7 @@ class Feeder(Dataset):
         data_numpy = self.data[index]
         label = self.label[index]
         data_numpy = np.array(data_numpy)
+        sampled_observation_ratio = np.float32(-1.0)
         if self.out_num_people == 1:
             data_numpy = data_numpy[:, :, :, :1]
         valid_frame_num = np.sum(data_numpy.sum(0).sum(-1).sum(-1) != 0)
@@ -133,6 +134,7 @@ class Feeder(Dataset):
 
         if self.temporal_crop_mode == 'prefix':
             observation_ratio = self._sample_observation_ratio()
+            sampled_observation_ratio = np.float32(observation_ratio)
             if self.uniform:
                 data_numpy, index_t = tools.valid_prefix_uniform(
                     data_numpy, valid_frame_num, observation_ratio, self.window_size, self.thres
@@ -224,7 +226,7 @@ class Feeder(Dataset):
         if self.out_num_people == 1 and data_numpy.shape[-1] != 1:
             data_numpy = data_numpy[:, :, :, :1]
 
-        return data_numpy, index_t, label, index
+        return data_numpy, index_t, label, index, sampled_observation_ratio
 
     def top_k(self, score, top_k):
         rank = score.argsort()

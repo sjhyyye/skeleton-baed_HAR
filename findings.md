@@ -21,19 +21,23 @@ The current project is therefore best framed as a lightweight early-recognition 
 - The new central benchmark is `NTU60` under an early-recognition protocol.
 - `XSub` is the first split to lock; `XView` is the next validation split.
 - `NTU120` is postponed until the `NTU60` story is stable.
-- The current phase is protocol freeze, not large-scale result reporting.
+- The `H1` baseline family is now substantially complete on `NTU60 XSub`.
+- The current phase remains single-module ablation, but the intent line is now materially clarified.
 
 ## What Is Already Clear
 
-- The project needs a single canonical prefix-construction protocol before method comparisons are meaningful.
-- A strong `SkateFormer-prefix` baseline is required before any method claims are credible.
-- Coarse intent supervision must be evaluated against more than one mapping scheme.
+- The project now has a fixed prefix-construction path and a usable early-recognition baseline family on `NTU60 XSub`.
+- `prefix_multi` is stronger than matched single-ratio training at both `0.1` and `0.3`.
+- The largest baseline gain appears in the hardest early regime: `31.88%` vs `27.66%` Top-1 at `r=0.1`, and `68.92%` vs `67.04%` at `r=0.3`.
+- The prefix-based multi-ratio path preserves near-full-observation performance: `91.42%` at `1.0` versus the clean full upper bound `91.73%`.
+- Fixed `intent-only` has now been evaluated under both semantic and trajectory coarse mappings.
+- The trajectory mapping is the better intent implementation, but it still does not beat `prefix_multi` at `0.1` or `0.3`.
+- A minimal `intent-improved` variant with ratio-adaptive intent weights and intent-to-action bias/gating reaches `31.30% / 68.48% / 85.53%` at `0.1 / 0.3 / 0.5`. This is a small gain over fixed trajectory intent-only at `0.3 / 0.5`, but it still misses `prefix_multi` at the decisive low ratios.
 - Full-sequence guidance must be compared against a simpler `KD-only` or equivalent teacher baseline.
 - The main claim should target low observation ratios first, especially `0.1` and `0.3`.
 
 ## Open Questions
 
-- What exact prefix-cropping and interpolation pipeline should be treated as canonical?
 - Which coarse-intent grouping is stable enough to support a paper claim?
 - Does consistency learning add value beyond straightforward teacher guidance?
 - Are the gains concentrated in specific action families such as interaction or object manipulation?
@@ -43,10 +47,10 @@ The current project is therefore best framed as a lightweight early-recognition 
 
 The project should now move in a strict order:
 
-1. Freeze the early-recognition protocol.
-2. Build the `SkateFormer-prefix` baseline.
-3. Add `multi-ratio` training under the same protocol.
-4. Test `intent-only`, `consistency-only`, and `KD-only`.
-5. Train the joint model only after the simpler comparisons are understood.
+1. Keep the completed `H1` baseline family fixed as the reference (`r=0.1`, `r=0.3`, and `prefix_multi`).
+2. Treat the semantic row, the trajectory row, and the adaptive-gated row as the complete current intent reference set rather than continuing to tweak intent first.
+3. Test `KD-only` and then `consistency-only` under the same locked protocol.
+4. Train the joint model only after the simpler teacher-guided comparisons are understood.
+5. Move to `XView` only after the `NTU60 XSub` gain sources are separated cleanly.
 
 This trajectory is intentionally conservative. The current bottleneck is not idea generation; it is experimental discipline.

@@ -12,6 +12,7 @@
 2. 已有工作大多集中在多观察比例统一建模、未来信息预测、或完整序列教师指导部分序列学习。
 3. 对骨架数据而言，如果方法依赖逐帧阶段标签、子动作切分或复杂流程，迁移成本较高。
 4. 因此，本课题的切入点应明确收敛为：`coarse intent auxiliary + full-prefix consistency + no frame-level annotation`。
+5. 结合当前实验反馈，固定式 `intent-only` 不应被直接抬升为最终方案，后续更合理的 refinement 候选包括：`ratio-adaptive coarse-to-fine intent`、`uncertainty-aware consistency`，以及可选的 `confusion-aware language prototype distillation`。
 
 ## 3. 研究目标
 本研究拟实现以下四个目标：
@@ -102,6 +103,15 @@
 - 人际互动
 - 激烈互动
 
+### 6.2.1 意图改进版：ratio-adaptive coarse-to-fine supervision
+考虑到固定 coarse intent 在所有观察比例下可能并不等价有效，后续优先引入一个“意图改进版”而不是直接放弃语义辅助。其核心思想是：
+
+- 在 `0.1/0.3` 等超低观察比例下，强调 coarse intent 监督
+- 在 `0.5` 以上逐步提高 fine action 约束权重
+- 将 coarse intent 从单一固定辅助任务，改为随 observation ratio 调整强度的 coarse-to-fine 监督
+
+这样做的目的不是增加额外标签成本，而是让语义辅助更贴合 early recognition 的信息暴露规律。固定式 `intent-only` 仍保留为必要对照组，不能被该改进版覆盖。
+
 ### 6.3 长短序列一致性学习
 对同一样本的前缀分支和完整分支施加一致性约束，使前缀输出向完整输出靠拢。
 
@@ -113,6 +123,15 @@
 
 首轮实现应优先从最简单的 `logits` 或 `KL` 一致性开始，避免方法过重。
 
+### 6.3.1 一致性改进版：uncertainty-aware consistency
+若普通 `KL`/`logits` 一致性最终与简单 `KD-only` 基本等价，则后续更有价值的方向是加入 uncertainty-aware 设计。例如：
+
+- 仅在 full 分支置信度较高时施加强一致性
+- 对 teacher 的熵、margin 或 top-k plausible classes 做条件约束
+- 在低观察比例下避免 prefix 分支被 full teacher 的过度确定性错误牵引
+
+该改进版的目标不是把 `KD` 换名，而是验证“完整序列对前缀的指导是否应随不确定性自适应变化”。
+
 ### 6.4 模型输出
 共享主干后设置两个预测头：
 
@@ -123,6 +142,16 @@
 
 - 前缀分支：动作分类 + 意图分类 + 一致性约束
 - 完整分支：动作分类监督 + 教师参考
+
+### 6.5 可选增强线：confusion-aware language prototype distillation
+如果前两条轻量 refinement 已经形成稳定结果，但主故事仍缺少区分度，可以加入一个训练期语义增强线：
+
+- 针对 early stage 最易混淆的类别对构造语言原型
+- 用文本描述动作意图、关键关节模式或交互属性
+- 训练期让 prefix 表征向这些 prototype 对齐
+- 测试期仍只保留 skeleton 输入，不增加额外推理模态
+
+该方向只作为后续增强线，不应在主结果尚未稳定时过早引入。
 
 ## 7. 损失函数与训练策略
 
@@ -136,6 +165,8 @@
 - `L_action`：动作分类损失
 - `L_intent`：粗粒度意图分类损失
 - `L_consistency`：前缀分支与完整分支之间的一致性损失
+
+若后续启用语言原型增强线，则再追加可选项 `λ3 * L_proto`，但该项不属于首轮必须实现内容。
 
 首轮超参数从以下设置开始：
 
@@ -152,7 +183,7 @@
    仅使用前缀序列，建立 `SkateFormer-prefix` 与 `multi-ratio` 基线。
 
 3. 联合训练  
-   加入 `intent` 与 `consistency`，形成完整方法。
+   加入 `intent` 与 `consistency`，形成完整方法。若基础版本收益不足，则优先替换为 `intent-improved` 或 `uncertainty-aware consistency`，而不是直接堆叠更多模块。
 
 ### 7.3 课程式训练
 为避免超低观察比例在初期拉低训练稳定性，采用逐步加难策略：
@@ -176,25 +207,32 @@
 为了明确收益来源，核心对比组固定为：
 
 - `SkateFormer-prefix + intent`
+- `SkateFormer-prefix + intent-improved`
 - `SkateFormer-prefix + consistency`
+- `SkateFormer-prefix + uncertainty-aware consistency`
 - `SkateFormer-prefix + KD-only`
+- `SkateFormer-prefix + language-prototype distillation`（可选）
 - `Full model`
 
 说明：
 
 1. `KD-only` 用于对照“是否只要完整序列教师就足够”。
 2. 如果 `consistency` 已经等价于简单 `KD`，则在论文中要明确术语，不要重复命名。
-3. `Full model` 的收益必须在上述单模块对比组上成立，方法才有说服力。
+3. `intent-improved` 是固定式 `intent-only` 的 refinement，而不是替代对照组。
+4. `Full model` 的收益必须在上述单模块对比组上成立，方法才有说服力。
 
 ### 8.3 消融重点
 重点分析以下因素：
 
 - 是否加入粗粒度意图辅助
+- 固定意图辅助与 ratio-adaptive 意图辅助的差异
 - 是否加入长短序列一致性
+- 普通一致性与 uncertainty-aware 一致性的差异
 - 不同一致性形式的影响
 - 不同意图映射方案的影响
 - 不同损失权重的影响
 - 不同观察比例训练策略的影响
+- 是否需要引入 language prototype 作为训练期增强
 
 ## 9. 评价指标与分析维度
 
@@ -231,8 +269,10 @@
 
 ### 10.2 第二优先级
 1. 加入双头结构与 `intent-only` 实验
-2. 加入 `consistency-only` / `KD-only` 实验
-3. 确认低观察比例是否存在稳定收益
+2. 在 `intent-only` 不足时加入 `intent-improved`，记录为意图改进版而不是覆盖原实验
+3. 加入 `consistency-only` / `KD-only` 实验
+4. 必要时加入 `uncertainty-aware consistency`
+5. 确认低观察比例是否存在稳定收益
 
 ### 10.3 第三优先级
 1. 扩展到 `NTU120`
@@ -242,14 +282,14 @@
 ## 11. 预期创新点的收敛表述
 当前版本不再把创新点写得过满，而收敛为以下三点：
 
-1. 面向早期骨架动作识别，将 coarse intent auxiliary 与 full-prefix consistency 进行联合建模。
-2. 在不依赖逐帧阶段标注、子动作切分和复杂流程的前提下，构建轻量 early skeleton 识别方案。
-3. 在 `NTU` 系列数据上系统分析不同观察比例下的收益来源，特别是低观察比例场景。
+1. 提出面向 early skeleton recognition 的 ratio-adaptive coarse-to-fine semantic supervision，使语义辅助随 observation ratio 自适应变化，而不是在所有前缀阶段使用同一固定强度。
+2. 提出 uncertainty-aware full-to-prefix consistency，在完整序列指导前缀分支时显式考虑 full branch 的可靠性，避免将普通 `KD` 直接包装为新模块。
+3. 在保持测试期 skeleton-only 推理的前提下，探索 confusion-aware language prototype distillation 作为可选增强线，并系统分析其是否真正改善 low-ratio 混淆模式。
 
 注意：
 
 - 不宜宣称“首次将层级语义引入骨架识别”，因为层级语义与 coarse-to-fine 思路在相关领域已有先例。
-- 更稳妥的表述应强调“用于 early skeleton recognition 的组合方式与轻量设定”。
+- 更稳妥的表述应强调“用于 early skeleton recognition 的 ratio-aware semantic design、uncertainty-aware consistency 与 skeleton-only inference 设定”。
 
 ## 12. 可能风险与应对
 
@@ -268,6 +308,9 @@
 ### 风险 5：方法复杂度增加但测试阶段收益有限
 应对方式：严格保证完整分支只参与训练，测试阶段只保留前缀分支，避免额外推理负担。
 
+### 风险 6：引入 language prototype 后主线变重
+应对方式：将其明确降级为可选增强线，仅在基础 semantic / consistency 故事已经成立后再引入。
+
 ## 13. 当前版本的阶段安排
 
 ### 阶段 P0：协议冻结
@@ -282,11 +325,14 @@
 
 ### 阶段 P2：单模块验证
 - 加入 `intent-only`
+- 若 `intent-only` 不足，则加入 `intent-improved`
 - 加入 `consistency-only`
 - 加入 `KD-only`
+- 必要时加入 `uncertainty-aware consistency`
 
 ### 阶段 P3：完整模型
 - 联合训练 `intent + consistency`
+- 或在证据更充分时联合训练 `intent-improved + uncertainty-aware consistency`
 - 完成主结果表与消融表
 - 完成不同动作大类的错误分析
 
@@ -296,4 +342,4 @@
 - 撰写论文摘要、引言、方法与实验
 
 ## 14. 一句话总结当前计划
-当前这条研究线已经从“泛泛的想法”收敛为一个明确的 early skeleton 方案：先锁定 `NTU60` early protocol，再建立 `SkateFormer-prefix` 基线，然后用 `coarse intent auxiliary` 和 `full-prefix consistency` 分别做单模块验证，最后再做联合模型与扩展实验。
+当前这条研究线已经从“泛泛的想法”收敛为一个明确的 early skeleton 方案：先锁定 `NTU60` early protocol，再建立 `SkateFormer-prefix` 基线，然后保留固定式 `intent-only` 作为参照，同时测试 `intent-improved`、`consistency-only`、`KD-only` 与 `uncertainty-aware consistency`，最后再决定联合模型与可选增强线是否成立。

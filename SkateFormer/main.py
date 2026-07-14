@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import argparse
+import json
 import inspect
 import os
 import pickle
@@ -59,9 +60,10 @@ def str2bool(v):
 
 
 class LabelSmoothingCrossEntropy(nn.Module):
-    def __init__(self, smoothing=0.1):
+    def __init__(self, smoothing=0.1, reduction='mean'):
         super(LabelSmoothingCrossEntropy, self).__init__()
         self.smoothing = smoothing
+        self.reduction = reduction
 
     def forward(self, x, target):
         confidence = 1. - self.smoothing
@@ -70,6 +72,10 @@ class LabelSmoothingCrossEntropy(nn.Module):
         nll_loss = nll_loss.squeeze(1)
         smooth_loss = -logprobs.mean(dim=-1)
         loss = confidence * nll_loss + self.smoothing * smooth_loss
+        if self.reduction == 'none':
+            return loss
+        if self.reduction == 'sum':
+            return loss.sum()
         return loss.mean()
 
 
@@ -103,6 +109,11 @@ def get_parser():
     parser.add_argument('--model-args', action=DictAction, default=dict(), help='the arguments of model')
     parser.add_argument('--weights', default=None, help='the weights for network initialization')
     parser.add_argument('--ignore-weights', type=str, default=[], nargs='+', help='the name of weights which will be ignored in the initialization')
+    parser.add_argument('--intent-label-path', default=None, help='path to the coarse-intent mapping json')
+    parser.add_argument('--intent-label-key', default=None, help='mapping key inside the coarse-intent json')
+    parser.add_argument('--intent-loss-weight', type=float, default=0.0, help='loss weight for auxiliary coarse-intent supervision')
+    parser.add_argument('--intent-loss-weight-by-ratio', action=DictAction, default=None,
+                        help='per-ratio auxiliary intent weights, e.g. 0.1=1.0 0.3=0.8')
 
     # optim
     parser.add_argument('--base-lr', type=float, default=0.01, help='initial learning rate')
@@ -151,6 +162,7 @@ class Processor():
 
         self.global_step = 0
         self.load_model()
+        self.load_intent_supervision()
         self.load_data()
 
         if self.arg.phase == 'train':
@@ -199,10 +211,7 @@ class Processor():
         shutil.copy2(inspect.getfile(Model), self.arg.work_dir)
         print(Model)
         self.model = Model(**self.arg.model_args)
-        if self.arg.loss_type == 'CE':
-            self.loss = nn.CrossEntropyLoss().to(self.device)
-        else:
-            self.loss = LabelSmoothingCrossEntropy(smoothing=0.1).to(self.device)
+        self.loss = self.build_classification_loss()
 
         if self.arg.weights:
             #self.global_step = int(arg.weights[:-3].split('-')[-1])
@@ -233,6 +242,122 @@ class Processor():
                     print('  ' + d)
                 state.update(weights)
                 self.model.load_state_dict(state)
+
+    def build_classification_loss(self, reduction='mean'):
+        if self.arg.loss_type == 'CE':
+            return nn.CrossEntropyLoss(reduction=reduction).to(self.device)
+        return LabelSmoothingCrossEntropy(smoothing=0.1, reduction=reduction).to(self.device)
+
+    @staticmethod
+    def _normalize_ratio_key(ratio):
+        return round(float(ratio), 4)
+
+    def _normalize_intent_weight_schedule(self, weight_schedule):
+        if not weight_schedule:
+            return {}
+        normalized = {}
+        for ratio, weight in weight_schedule.items():
+            normalized[self._normalize_ratio_key(ratio)] = float(weight)
+        return normalized
+
+    def load_intent_supervision(self):
+        self.intent_loss_weight = float(getattr(self.arg, 'intent_loss_weight', 0.0))
+        self.intent_loss_weight_by_ratio = self._normalize_intent_weight_schedule(
+            getattr(self.arg, 'intent_loss_weight_by_ratio', None)
+        )
+        self.intent_label_map = None
+        self.intent_loss = None
+
+        if self.intent_loss_weight <= 0 and not self.intent_loss_weight_by_ratio:
+            return
+
+        if not self.arg.intent_label_path or not self.arg.intent_label_key:
+            raise ValueError('intent-only requires both --intent-label-path and --intent-label-key.')
+
+        with open(self.arg.intent_label_path, 'r') as f:
+            mapping_config = json.load(f)
+
+        if self.arg.intent_label_key not in mapping_config:
+            raise KeyError(f'Intent mapping key {self.arg.intent_label_key} not found in {self.arg.intent_label_path}.')
+
+        label_map = mapping_config[self.arg.intent_label_key]
+        self.intent_label_map = torch.tensor(label_map, dtype=torch.long, device=self.device)
+        self.intent_loss = self.build_classification_loss(reduction='none')
+
+        if self.intent_label_map.numel() != getattr(self.model, 'num_classes', self.intent_label_map.numel()):
+            raise ValueError(
+                f'Intent label map length {self.intent_label_map.numel()} does not match model.num_classes={self.model.num_classes}.'
+            )
+
+        expected_intent_classes = int(self.intent_label_map.max().item()) + 1
+        model_intent_classes = int(getattr(self.model, 'intent_num_classes', 0))
+        if model_intent_classes <= 0:
+            raise ValueError('Intent supervision is enabled but model_args.intent_num_classes is not set.')
+        if model_intent_classes != expected_intent_classes:
+            raise ValueError(
+                f'model intent_num_classes={model_intent_classes} does not match mapping classes={expected_intent_classes}.'
+            )
+
+    def get_intent_loss_weights(self, observation_ratio, batch_size, device):
+        if observation_ratio is None:
+            return torch.full((batch_size,), self.intent_loss_weight, dtype=torch.float32, device=device)
+
+        if torch.is_tensor(observation_ratio):
+            observation_ratio = observation_ratio.to(device=device, dtype=torch.float32).view(-1)
+        else:
+            observation_ratio = torch.tensor(observation_ratio, dtype=torch.float32, device=device).view(-1)
+
+        weights = torch.full_like(observation_ratio, self.intent_loss_weight, dtype=torch.float32)
+        for ratio, weight in self.intent_loss_weight_by_ratio.items():
+            ratio_tensor = torch.full_like(observation_ratio, float(ratio))
+            weight_tensor = torch.full_like(observation_ratio, float(weight))
+            weights = torch.where(torch.isclose(observation_ratio, ratio_tensor, atol=1e-4, rtol=0.0),
+                                  weight_tensor, weights)
+        return weights
+
+    def unpack_model_output(self, output):
+        if isinstance(output, dict):
+            action_output = output.get('action')
+            if action_output is None:
+                raise ValueError('Model output dict must contain an "action" key.')
+            aux_output = {k: v for k, v in output.items() if k != 'action'}
+            return action_output, aux_output
+        return output, {}
+
+    def unpack_batch(self, batch):
+        if len(batch) == 4:
+            data, index_t, label, index = batch
+            observation_ratio = None
+        elif len(batch) == 5:
+            data, index_t, label, index, observation_ratio = batch
+        else:
+            raise ValueError(f'Expected batch with 4 or 5 items, got {len(batch)}.')
+        return data, index_t, label, index, observation_ratio
+
+    def compute_losses(self, output, label, observation_ratio=None):
+        action_output, aux_output = self.unpack_model_output(output)
+        total_loss = self.loss(action_output, label)
+        loss_stats = {}
+
+        if self.intent_loss is not None:
+            if 'intent' not in aux_output:
+                raise ValueError('Intent supervision is enabled but model output does not provide intent logits.')
+            intent_target = self.intent_label_map[label]
+            intent_loss = self.intent_loss(aux_output['intent'], intent_target)
+            intent_weights = self.get_intent_loss_weights(
+                observation_ratio=observation_ratio,
+                batch_size=intent_loss.shape[0],
+                device=intent_loss.device
+            )
+            weighted_intent_loss = (intent_loss * intent_weights).mean()
+            total_loss = total_loss + weighted_intent_loss
+            intent_pred = aux_output['intent'].argmax(dim=1)
+            loss_stats['intent_loss'] = intent_loss.mean().detach().item()
+            loss_stats['intent_weighted_loss'] = weighted_intent_loss.detach().item()
+            loss_stats['intent_weight'] = intent_weights.mean().detach().item()
+            loss_stats['intent_acc'] = (intent_pred == intent_target).float().mean().detach().item()
+
+        return action_output, total_loss, loss_stats
 
     def load_optimizer(self):
         if self.arg.optimizer == 'SGD':
@@ -313,23 +438,30 @@ class Processor():
 
         loss_value = []
         acc_value = []
+        intent_loss_value = []
+        intent_weighted_loss_value = []
+        intent_acc_value = []
+        intent_weight_value = []
         self.train_writer.add_scalar('epoch', epoch, self.global_step)
         self.record_time()
         timer = dict(dataloader=0.001, model=0.001, statistics=0.001)
         process = tqdm(loader)
 
-        for batch_idx, (data, index_t, label, index) in enumerate(process):
+        for batch_idx, batch in enumerate(process):
+            data, index_t, label, index, observation_ratio = self.unpack_batch(batch)
             self.lr_scheduler.step_update(self.global_step)
             self.global_step += 1
             with torch.no_grad():
                 data = data.float().to(self.device)
                 index_t = index_t.float().to(self.device)
                 label = label.long().to(self.device)
+                if observation_ratio is not None:
+                    observation_ratio = observation_ratio.float().to(self.device)
             timer['dataloader'] += self.split_time()
 
             # forward
-            output = self.model(data, index_t)
-            loss = self.loss(output, label)
+            model_output = self.model(data, index_t)
+            output, loss, aux_stats = self.compute_losses(model_output, label, observation_ratio=observation_ratio)
 
             # backward
             self.optimizer.zero_grad()
@@ -346,6 +478,15 @@ class Processor():
             acc_value.append(acc.data.item())
             self.train_writer.add_scalar('acc', acc, self.global_step)
             self.train_writer.add_scalar('loss', loss.data.item(), self.global_step)
+            if 'intent_loss' in aux_stats:
+                intent_loss_value.append(aux_stats['intent_loss'])
+                intent_weighted_loss_value.append(aux_stats['intent_weighted_loss'])
+                intent_acc_value.append(aux_stats['intent_acc'])
+                intent_weight_value.append(aux_stats['intent_weight'])
+                self.train_writer.add_scalar('intent_loss', aux_stats['intent_loss'], self.global_step)
+                self.train_writer.add_scalar('intent_weighted_loss', aux_stats['intent_weighted_loss'], self.global_step)
+                self.train_writer.add_scalar('intent_acc', aux_stats['intent_acc'], self.global_step)
+                self.train_writer.add_scalar('intent_weight', aux_stats['intent_weight'], self.global_step)
 
             # statistics
             self.lr = self.optimizer.param_groups[0]['lr']
@@ -360,6 +501,13 @@ class Processor():
         self.print_log(
             '\tMean training loss: {:.4f}.  Mean training acc: {:.2f}%.'.format(np.mean(loss_value),
                                                                                 np.mean(acc_value) * 100))
+        if intent_loss_value:
+            self.print_log(
+                '\tMean intent loss: {:.4f}.  Mean weighted intent loss: {:.4f}.  Mean intent acc: {:.2f}%.  Mean intent lambda: {:.4f}.'.format(
+                    np.mean(intent_loss_value), np.mean(intent_weighted_loss_value),
+                    np.mean(intent_acc_value) * 100, np.mean(intent_weight_value)
+                )
+            )
         self.print_log('\tLearning Rate: {:.4f}'.format(self.lr))
         self.print_log('\tTime consumption: [Data]{dataloader}, [Network]{model}'.format(**proportion))
 
@@ -379,21 +527,35 @@ class Processor():
         self.print_log('Eval epoch: {}'.format(epoch + 1))
         for ln in loader_name:
             loss_value = []
+            intent_loss_value = []
+            intent_weighted_loss_value = []
+            intent_acc_value = []
+            intent_weight_value = []
             score_frag = []
             label_list = []
             pred_list = []
             step = 0
             process = tqdm(self.data_loader[ln])
-            for batch_idx, (data, index_t, label, index) in enumerate(process):
+            for batch_idx, batch in enumerate(process):
+                data, index_t, label, index, observation_ratio = self.unpack_batch(batch)
                 label_list.append(label)
                 with torch.no_grad():
                     data = data.float().to(self.device)
                     index_t = index_t.float().to(self.device)
                     label = label.long().to(self.device)
-                    output = self.model(data, index_t)
-                    loss = self.loss(output, label)
+                    if observation_ratio is not None:
+                        observation_ratio = observation_ratio.float().to(self.device)
+                    model_output = self.model(data, index_t)
+                    output, loss, aux_stats = self.compute_losses(
+                        model_output, label, observation_ratio=observation_ratio
+                    )
                     score_frag.append(output.data.cpu().numpy())
                     loss_value.append(loss.data.item())
+                    if 'intent_loss' in aux_stats:
+                        intent_loss_value.append(aux_stats['intent_loss'])
+                        intent_weighted_loss_value.append(aux_stats['intent_weighted_loss'])
+                        intent_acc_value.append(aux_stats['intent_acc'])
+                        intent_weight_value.append(aux_stats['intent_weight'])
 
                     _, predict_label = torch.max(output.data, 1)
                     pred_list.append(predict_label.data.cpu().numpy())
@@ -426,6 +588,11 @@ class Processor():
                 zip(self.data_loader[ln].dataset.sample_name, score))
             self.print_log('\tMean {} loss of {} batches: {}.'.format(
                 ln, len(self.data_loader[ln]), np.mean(loss_value)))
+            if intent_loss_value:
+                self.print_log('\tMean {} intent loss: {}.'.format(ln, np.mean(intent_loss_value)))
+                self.print_log('\tMean {} weighted intent loss: {}.'.format(ln, np.mean(intent_weighted_loss_value)))
+                self.print_log('\tMean {} intent acc: {:.2f}%.'.format(ln, np.mean(intent_acc_value) * 100))
+                self.print_log('\tMean {} intent lambda: {:.4f}.'.format(ln, np.mean(intent_weight_value)))
             for k in self.arg.show_topk:
                 self.print_log('\tTop{}: {:.2f}%'.format(
                     k, 100 * self.data_loader[ln].dataset.top_k(score, k)))

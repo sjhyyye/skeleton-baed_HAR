@@ -1,0 +1,79 @@
+seed: 1
+num_worker: 10
+work_dir: ./work_dir/ntu/cs/SkateFormer_j/intent_trajectory_adaptive_gated_multi_24p
+
+phase: test
+save_score: True
+
+# feeder
+feeder: feeders.feeder_ntu.Feeder
+test_feeder_args:
+  data_path: ./data/ntu/NTU60_CS.npz
+  split: test
+  window_size: 64
+  p_interval: [1.0]
+  temporal_crop_mode: prefix
+  observation_ratio: [0.5]
+  thres: 64
+  uniform: True
+  partition: True
+  debug: False
+
+# model
+model: model.SkateFormer.SkateFormer_
+model_args:
+  num_classes: 60
+  intent_num_classes: 10
+  intent_condition_mode: bias_gate
+  intent_condition_on: probs
+  intent_condition_detach: False
+  intent_action_bias_scale: 1.0
+  intent_action_gate_scale: 1.0
+  num_people: 2
+  num_points: 24
+  kernel_size: 7
+  num_heads: 32
+  attn_drop: 0.5
+  head_drop: 0.0
+  rel: True
+  drop_path: 0.2
+  type_1_size: [8, 8]
+  type_2_size: [8, 12]
+  type_3_size: [8, 8]
+  type_4_size: [8, 12]
+  mlp_ratio: 4.0
+  index_t: True
+
+# intent-only
+intent_label_path: ./../data/label_mappings/ntu60/trajectory_coarse_v1.json
+intent_label_key: ntu60_to_motion10_index
+intent_loss_weight: 0.5
+intent_loss_weight_by_ratio:
+  0.1: 1.0
+  0.3: 0.8
+  0.5: 0.5
+  0.7: 0.3
+  0.9: 0.1
+  1.0: 0.0
+
+weights: ./work_dir/ntu/cs/SkateFormer_j/intent_trajectory_adaptive_gated_multi_24p/runs.pt
+
+# optim
+optimizer: AdamW
+weight_decay: 0.1
+lr_scheduler: cosine
+base_lr: 0.25e-3
+min_lr: 0.25e-5
+warmup_lr: 0.25e-7
+warmup_prefix: False
+warm_up_epoch: 25
+
+# training
+device: [0]
+batch_size: 32
+test_batch_size: 32
+num_epoch: 500
+nesterov: True
+grad_clip: True
+grad_max: 1.0
+loss_type: LSCE

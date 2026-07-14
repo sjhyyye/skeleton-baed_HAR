@@ -4,6 +4,7 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from timm.models.layers import drop_path, trunc_normal_, Mlp, DropPath, create_act_layer, get_norm_act_layer, create_conv2d
 
 ''' Partition and Reverse '''
@@ -330,16 +331,34 @@ class SkateFormer(nn.Module):
                  embed_dim=64, num_people=2, num_frames=64, num_points=50, kernel_size=7, num_heads=32,
                  type_1_size=(1, 1), type_2_size=(1, 1), type_3_size=(1, 1), type_4_size=(1, 1),
                  attn_drop=0., head_drop=0., drop=0., rel=True, drop_path=0., mlp_ratio=4.,
-                 act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm, index_t=False, global_pool='avg'):
+                 act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm, index_t=False, global_pool='avg',
+                 intent_num_classes=0, intent_condition_mode='none', intent_condition_on='probs',
+                 intent_condition_detach=False, intent_action_bias_scale=1.0, intent_action_gate_scale=1.0):
 
         super(SkateFormer, self).__init__()
 
         assert len(depths) == len(channels), "For each stage a channel dimension must be given."
         assert global_pool in ["avg", "max"], f"Only avg and max is supported but {global_pool} is given"
         self.num_classes: int = num_classes
+        self.intent_num_classes: int = int(intent_num_classes)
         self.head_drop = head_drop
         self.index_t = index_t
         self.embed_dim = embed_dim
+        self.num_features = channels[-1]
+        self.intent_condition_mode = str(intent_condition_mode).lower()
+        self.intent_condition_on = str(intent_condition_on).lower()
+        self.intent_condition_detach = bool(intent_condition_detach)
+        self.intent_action_bias_scale = float(intent_action_bias_scale)
+        self.intent_action_gate_scale = float(intent_action_gate_scale)
+
+        if self.intent_condition_mode not in ('none', 'bias', 'gate', 'bias_gate'):
+            raise ValueError(
+                f'intent_condition_mode must be one of none/bias/gate/bias_gate, got {intent_condition_mode}.'
+            )
+        if self.intent_condition_on not in ('probs', 'logits'):
+            raise ValueError(f'intent_condition_on must be one of probs/logits, got {intent_condition_on}.')
+        if self.intent_condition_mode != 'none' and self.intent_num_classes <= 0:
+            raise ValueError('intent conditioning requires intent_num_classes > 0.')
 
         if self.head_drop != 0:
             self.dropout = nn.Dropout(p=self.head_drop)
@@ -395,6 +414,11 @@ class SkateFormer(nn.Module):
         self.stages = nn.ModuleList(stages)
         self.global_pool: str = global_pool
         self.head = nn.Linear(channels[-1], num_classes)
+        self.intent_head = nn.Linear(channels[-1], self.intent_num_classes) if self.intent_num_classes > 0 else None
+        use_intent_bias = self.intent_condition_mode in ('bias', 'bias_gate')
+        use_intent_gate = self.intent_condition_mode in ('gate', 'bias_gate')
+        self.intent_to_action_bias = nn.Linear(self.intent_num_classes, num_classes) if use_intent_bias else None
+        self.intent_to_action_gate = nn.Linear(self.intent_num_classes, num_classes) if use_intent_gate else None
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -423,7 +447,31 @@ class SkateFormer(nn.Module):
             input = torch.amax(input, dim=(2, 3))
         if self.dropout is not None:
             input = self.dropout(input)
-        return input if pre_logits else self.head(input)
+        if pre_logits:
+            return input
+
+        action_logits = self.head(input)
+        if self.intent_head is None:
+            return action_logits
+
+        intent_logits = self.intent_head(input)
+        if self.intent_condition_mode != 'none':
+            if self.intent_condition_on == 'logits':
+                intent_context = intent_logits
+            else:
+                intent_context = F.softmax(intent_logits, dim=-1)
+            if self.intent_condition_detach:
+                intent_context = intent_context.detach()
+            if self.intent_to_action_bias is not None:
+                action_logits = action_logits + self.intent_action_bias_scale * self.intent_to_action_bias(intent_context)
+            if self.intent_to_action_gate is not None:
+                intent_gate = torch.sigmoid(self.intent_to_action_gate(intent_context))
+                action_logits = action_logits * (1.0 + self.intent_action_gate_scale * intent_gate)
+
+        return {
+            'action': action_logits,
+            'intent': intent_logits,
+        }
 
     def forward(self, input, index_t):
         B, C, T, V, M = input.shape

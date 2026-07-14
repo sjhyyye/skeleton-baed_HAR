@@ -1,0 +1,613 @@
+{
+  "scheme": "early_observable_v2",
+  "dataset": "NTU60",
+  "description": "Early-observable coarse mapping based on the first visible body-part evidence and motion pattern under low observation ratios.",
+  "source_file": "manual_draft_from_semantic_vs_trajectory_comparison.csv",
+  "num_ntu60_classes": 60,
+  "earlyobs10_classes": [
+    {
+      "index": 0,
+      "id": "E10-01",
+      "name": "hand_to_head_face",
+      "observable_cue": "early prefix reveals hand approach to head, face, or mouth region"
+    },
+    {
+      "index": 1,
+      "id": "E10-02",
+      "name": "torso_self_touch_reach",
+      "observable_cue": "early prefix reveals hand reach toward torso, chest, neck, back, or pocket region"
+    },
+    {
+      "index": 2,
+      "id": "E10-03",
+      "name": "fine_manual_front_object",
+      "observable_cue": "early prefix reveals fine hand manipulation in front of the body or near a small object/device"
+    },
+    {
+      "index": 3,
+      "id": "E10-04",
+      "name": "object_directed_limb_action",
+      "observable_cue": "early prefix reveals a clear limb-driven action directed toward an external object or target"
+    },
+    {
+      "index": 4,
+      "id": "E10-05",
+      "name": "clothing_footwear_motion",
+      "observable_cue": "early prefix reveals dressing motion involving jacket or footwear with trunk or leg participation"
+    },
+    {
+      "index": 5,
+      "id": "E10-06",
+      "name": "head_accessory_motion",
+      "observable_cue": "early prefix reveals putting on or taking off a head accessory such as glasses or hat"
+    },
+    {
+      "index": 6,
+      "id": "E10-07",
+      "name": "whole_body_transition_state",
+      "observable_cue": "early prefix reveals posture transition, jump, or unstable whole-body state"
+    },
+    {
+      "index": 7,
+      "id": "E10-08",
+      "name": "arm_hand_symbolic_gesture",
+      "observable_cue": "early prefix reveals arm or hand dominant symbolic or communicative gesture"
+    },
+    {
+      "index": 8,
+      "id": "E10-09",
+      "name": "head_symbolic_state",
+      "observable_cue": "early prefix reveals head-dominant symbolic state such as nodding or shaking"
+    },
+    {
+      "index": 9,
+      "id": "E10-10",
+      "name": "interpersonal_action",
+      "observable_cue": "early prefix reveals a two-person interaction regardless of aggressive polarity"
+    }
+  ],
+  "ntu60_to_earlyobs10_index": [
+    0,
+    0,
+    0,
+    0,
+    3,
+    3,
+    3,
+    6,
+    6,
+    7,
+    2,
+    2,
+    2,
+    4,
+    4,
+    4,
+    4,
+    5,
+    5,
+    5,
+    5,
+    7,
+    7,
+    3,
+    1,
+    6,
+    6,
+    2,
+    2,
+    2,
+    7,
+    2,
+    2,
+    7,
+    8,
+    8,
+    0,
+    7,
+    7,
+    7,
+    0,
+    6,
+    6,
+    0,
+    1,
+    1,
+    1,
+    1,
+    0,
+    9,
+    9,
+    9,
+    9,
+    9,
+    9,
+    9,
+    9,
+    9,
+    9,
+    9
+  ],
+  "mapping_by_ntu60_id": {
+    "1": {
+      "ntu60_id": 1,
+      "ntu60_label": "drink water",
+      "earlyobs10_index": 0,
+      "earlyobs10_id": "E10-01",
+      "earlyobs10_name": "hand_to_head_face",
+      "rule_basis": "drink/eat/grooming/health actions with early hand-to-face evidence"
+    },
+    "2": {
+      "ntu60_id": 2,
+      "ntu60_label": "eat meal/snack",
+      "earlyobs10_index": 0,
+      "earlyobs10_id": "E10-01",
+      "earlyobs10_name": "hand_to_head_face",
+      "rule_basis": "drink/eat/grooming/health actions with early hand-to-face evidence"
+    },
+    "3": {
+      "ntu60_id": 3,
+      "ntu60_label": "brushing teeth",
+      "earlyobs10_index": 0,
+      "earlyobs10_id": "E10-01",
+      "earlyobs10_name": "hand_to_head_face",
+      "rule_basis": "drink/eat/grooming/health actions with early hand-to-face evidence"
+    },
+    "4": {
+      "ntu60_id": 4,
+      "ntu60_label": "brushing hair",
+      "earlyobs10_index": 0,
+      "earlyobs10_id": "E10-01",
+      "earlyobs10_name": "hand_to_head_face",
+      "rule_basis": "drink/eat/grooming/health actions with early hand-to-face evidence"
+    },
+    "5": {
+      "ntu60_id": 5,
+      "ntu60_label": "drop",
+      "earlyobs10_index": 3,
+      "earlyobs10_id": "E10-04",
+      "earlyobs10_name": "object_directed_limb_action",
+      "rule_basis": "object-directed limb actions with clear external target"
+    },
+    "6": {
+      "ntu60_id": 6,
+      "ntu60_label": "pickup",
+      "earlyobs10_index": 3,
+      "earlyobs10_id": "E10-04",
+      "earlyobs10_name": "object_directed_limb_action",
+      "rule_basis": "object-directed limb actions with clear external target"
+    },
+    "7": {
+      "ntu60_id": 7,
+      "ntu60_label": "throw",
+      "earlyobs10_index": 3,
+      "earlyobs10_id": "E10-04",
+      "earlyobs10_name": "object_directed_limb_action",
+      "rule_basis": "object-directed limb actions with clear external target"
+    },
+    "8": {
+      "ntu60_id": 8,
+      "ntu60_label": "sitting down",
+      "earlyobs10_index": 6,
+      "earlyobs10_id": "E10-07",
+      "earlyobs10_name": "whole_body_transition_state",
+      "rule_basis": "posture transition, hopping, jumping, or unstable whole-body state"
+    },
+    "9": {
+      "ntu60_id": 9,
+      "ntu60_label": "standing up (from sitting position)",
+      "earlyobs10_index": 6,
+      "earlyobs10_id": "E10-07",
+      "earlyobs10_name": "whole_body_transition_state",
+      "rule_basis": "posture transition, hopping, jumping, or unstable whole-body state"
+    },
+    "10": {
+      "ntu60_id": 10,
+      "ntu60_label": "clapping",
+      "earlyobs10_index": 7,
+      "earlyobs10_id": "E10-08",
+      "earlyobs10_name": "arm_hand_symbolic_gesture",
+      "rule_basis": "arm-hand symbolic gestures"
+    },
+    "11": {
+      "ntu60_id": 11,
+      "ntu60_label": "reading",
+      "earlyobs10_index": 2,
+      "earlyobs10_id": "E10-03",
+      "earlyobs10_name": "fine_manual_front_object",
+      "rule_basis": "fine manual front-of-body or device-oriented actions"
+    },
+    "12": {
+      "ntu60_id": 12,
+      "ntu60_label": "writing",
+      "earlyobs10_index": 2,
+      "earlyobs10_id": "E10-03",
+      "earlyobs10_name": "fine_manual_front_object",
+      "rule_basis": "fine manual front-of-body or device-oriented actions"
+    },
+    "13": {
+      "ntu60_id": 13,
+      "ntu60_label": "tear up paper",
+      "earlyobs10_index": 2,
+      "earlyobs10_id": "E10-03",
+      "earlyobs10_name": "fine_manual_front_object",
+      "rule_basis": "fine manual front-of-body or device-oriented actions"
+    },
+    "14": {
+      "ntu60_id": 14,
+      "ntu60_label": "wear jacket",
+      "earlyobs10_index": 4,
+      "earlyobs10_id": "E10-05",
+      "earlyobs10_name": "clothing_footwear_motion",
+      "rule_basis": "dressing actions involving jacket or footwear"
+    },
+    "15": {
+      "ntu60_id": 15,
+      "ntu60_label": "take off jacket",
+      "earlyobs10_index": 4,
+      "earlyobs10_id": "E10-05",
+      "earlyobs10_name": "clothing_footwear_motion",
+      "rule_basis": "dressing actions involving jacket or footwear"
+    },
+    "16": {
+      "ntu60_id": 16,
+      "ntu60_label": "wear a shoe",
+      "earlyobs10_index": 4,
+      "earlyobs10_id": "E10-05",
+      "earlyobs10_name": "clothing_footwear_motion",
+      "rule_basis": "dressing actions involving jacket or footwear"
+    },
+    "17": {
+      "ntu60_id": 17,
+      "ntu60_label": "take off a shoe",
+      "earlyobs10_index": 4,
+      "earlyobs10_id": "E10-05",
+      "earlyobs10_name": "clothing_footwear_motion",
+      "rule_basis": "dressing actions involving jacket or footwear"
+    },
+    "18": {
+      "ntu60_id": 18,
+      "ntu60_label": "wear on glasses",
+      "earlyobs10_index": 5,
+      "earlyobs10_id": "E10-06",
+      "earlyobs10_name": "head_accessory_motion",
+      "rule_basis": "head accessory dressing actions"
+    },
+    "19": {
+      "ntu60_id": 19,
+      "ntu60_label": "take off glasses",
+      "earlyobs10_index": 5,
+      "earlyobs10_id": "E10-06",
+      "earlyobs10_name": "head_accessory_motion",
+      "rule_basis": "head accessory dressing actions"
+    },
+    "20": {
+      "ntu60_id": 20,
+      "ntu60_label": "put on a hat/cap",
+      "earlyobs10_index": 5,
+      "earlyobs10_id": "E10-06",
+      "earlyobs10_name": "head_accessory_motion",
+      "rule_basis": "head accessory dressing actions"
+    },
+    "21": {
+      "ntu60_id": 21,
+      "ntu60_label": "take off a hat/cap",
+      "earlyobs10_index": 5,
+      "earlyobs10_id": "E10-06",
+      "earlyobs10_name": "head_accessory_motion",
+      "rule_basis": "head accessory dressing actions"
+    },
+    "22": {
+      "ntu60_id": 22,
+      "ntu60_label": "cheer up",
+      "earlyobs10_index": 7,
+      "earlyobs10_id": "E10-08",
+      "earlyobs10_name": "arm_hand_symbolic_gesture",
+      "rule_basis": "arm-hand symbolic gestures"
+    },
+    "23": {
+      "ntu60_id": 23,
+      "ntu60_label": "hand waving",
+      "earlyobs10_index": 7,
+      "earlyobs10_id": "E10-08",
+      "earlyobs10_name": "arm_hand_symbolic_gesture",
+      "rule_basis": "arm-hand symbolic gestures"
+    },
+    "24": {
+      "ntu60_id": 24,
+      "ntu60_label": "kicking something",
+      "earlyobs10_index": 3,
+      "earlyobs10_id": "E10-04",
+      "earlyobs10_name": "object_directed_limb_action",
+      "rule_basis": "object-directed limb actions with clear external target"
+    },
+    "25": {
+      "ntu60_id": 25,
+      "ntu60_label": "reach into pocket",
+      "earlyobs10_index": 1,
+      "earlyobs10_id": "E10-02",
+      "earlyobs10_name": "torso_self_touch_reach",
+      "rule_basis": "self-touch or reach actions centered on torso/pocket region"
+    },
+    "26": {
+      "ntu60_id": 26,
+      "ntu60_label": "hopping (one foot jumping)",
+      "earlyobs10_index": 6,
+      "earlyobs10_id": "E10-07",
+      "earlyobs10_name": "whole_body_transition_state",
+      "rule_basis": "posture transition, hopping, jumping, or unstable whole-body state"
+    },
+    "27": {
+      "ntu60_id": 27,
+      "ntu60_label": "jump up",
+      "earlyobs10_index": 6,
+      "earlyobs10_id": "E10-07",
+      "earlyobs10_name": "whole_body_transition_state",
+      "rule_basis": "posture transition, hopping, jumping, or unstable whole-body state"
+    },
+    "28": {
+      "ntu60_id": 28,
+      "ntu60_label": "make a phone call/answer phone",
+      "earlyobs10_index": 2,
+      "earlyobs10_id": "E10-03",
+      "earlyobs10_name": "fine_manual_front_object",
+      "rule_basis": "fine manual front-of-body or device-oriented actions"
+    },
+    "29": {
+      "ntu60_id": 29,
+      "ntu60_label": "playing with phone/tablet",
+      "earlyobs10_index": 2,
+      "earlyobs10_id": "E10-03",
+      "earlyobs10_name": "fine_manual_front_object",
+      "rule_basis": "fine manual front-of-body or device-oriented actions"
+    },
+    "30": {
+      "ntu60_id": 30,
+      "ntu60_label": "typing on a keyboard",
+      "earlyobs10_index": 2,
+      "earlyobs10_id": "E10-03",
+      "earlyobs10_name": "fine_manual_front_object",
+      "rule_basis": "fine manual front-of-body or device-oriented actions"
+    },
+    "31": {
+      "ntu60_id": 31,
+      "ntu60_label": "pointing to something with finger",
+      "earlyobs10_index": 7,
+      "earlyobs10_id": "E10-08",
+      "earlyobs10_name": "arm_hand_symbolic_gesture",
+      "rule_basis": "arm-hand symbolic gestures"
+    },
+    "32": {
+      "ntu60_id": 32,
+      "ntu60_label": "taking a selfie",
+      "earlyobs10_index": 2,
+      "earlyobs10_id": "E10-03",
+      "earlyobs10_name": "fine_manual_front_object",
+      "rule_basis": "fine manual front-of-body or device-oriented actions"
+    },
+    "33": {
+      "ntu60_id": 33,
+      "ntu60_label": "check time (from watch)",
+      "earlyobs10_index": 2,
+      "earlyobs10_id": "E10-03",
+      "earlyobs10_name": "fine_manual_front_object",
+      "rule_basis": "fine manual front-of-body or device-oriented actions"
+    },
+    "34": {
+      "ntu60_id": 34,
+      "ntu60_label": "rub two hands together",
+      "earlyobs10_index": 7,
+      "earlyobs10_id": "E10-08",
+      "earlyobs10_name": "arm_hand_symbolic_gesture",
+      "rule_basis": "arm-hand symbolic gestures"
+    },
+    "35": {
+      "ntu60_id": 35,
+      "ntu60_label": "nod head/bow",
+      "earlyobs10_index": 8,
+      "earlyobs10_id": "E10-09",
+      "earlyobs10_name": "head_symbolic_state",
+      "rule_basis": "head-dominant symbolic gestures"
+    },
+    "36": {
+      "ntu60_id": 36,
+      "ntu60_label": "shake head",
+      "earlyobs10_index": 8,
+      "earlyobs10_id": "E10-09",
+      "earlyobs10_name": "head_symbolic_state",
+      "rule_basis": "head-dominant symbolic gestures"
+    },
+    "37": {
+      "ntu60_id": 37,
+      "ntu60_label": "wipe face",
+      "earlyobs10_index": 0,
+      "earlyobs10_id": "E10-01",
+      "earlyobs10_name": "hand_to_head_face",
+      "rule_basis": "drink/eat/grooming/health actions with early hand-to-face evidence"
+    },
+    "38": {
+      "ntu60_id": 38,
+      "ntu60_label": "salute",
+      "earlyobs10_index": 7,
+      "earlyobs10_id": "E10-08",
+      "earlyobs10_name": "arm_hand_symbolic_gesture",
+      "rule_basis": "arm-hand symbolic gestures"
+    },
+    "39": {
+      "ntu60_id": 39,
+      "ntu60_label": "put the palms together",
+      "earlyobs10_index": 7,
+      "earlyobs10_id": "E10-08",
+      "earlyobs10_name": "arm_hand_symbolic_gesture",
+      "rule_basis": "arm-hand symbolic gestures"
+    },
+    "40": {
+      "ntu60_id": 40,
+      "ntu60_label": "cross hands in front (say stop)",
+      "earlyobs10_index": 7,
+      "earlyobs10_id": "E10-08",
+      "earlyobs10_name": "arm_hand_symbolic_gesture",
+      "rule_basis": "arm-hand symbolic gestures"
+    },
+    "41": {
+      "ntu60_id": 41,
+      "ntu60_label": "sneeze/cough",
+      "earlyobs10_index": 0,
+      "earlyobs10_id": "E10-01",
+      "earlyobs10_name": "hand_to_head_face",
+      "rule_basis": "drink/eat/grooming/health actions with early hand-to-face evidence"
+    },
+    "42": {
+      "ntu60_id": 42,
+      "ntu60_label": "staggering",
+      "earlyobs10_index": 6,
+      "earlyobs10_id": "E10-07",
+      "earlyobs10_name": "whole_body_transition_state",
+      "rule_basis": "posture transition, hopping, jumping, or unstable whole-body state"
+    },
+    "43": {
+      "ntu60_id": 43,
+      "ntu60_label": "falling",
+      "earlyobs10_index": 6,
+      "earlyobs10_id": "E10-07",
+      "earlyobs10_name": "whole_body_transition_state",
+      "rule_basis": "posture transition, hopping, jumping, or unstable whole-body state"
+    },
+    "44": {
+      "ntu60_id": 44,
+      "ntu60_label": "touch head (headache)",
+      "earlyobs10_index": 0,
+      "earlyobs10_id": "E10-01",
+      "earlyobs10_name": "hand_to_head_face",
+      "rule_basis": "drink/eat/grooming/health actions with early hand-to-face evidence"
+    },
+    "45": {
+      "ntu60_id": 45,
+      "ntu60_label": "touch chest (stomachache/heart pain)",
+      "earlyobs10_index": 1,
+      "earlyobs10_id": "E10-02",
+      "earlyobs10_name": "torso_self_touch_reach",
+      "rule_basis": "self-touch or reach actions centered on torso/pocket region"
+    },
+    "46": {
+      "ntu60_id": 46,
+      "ntu60_label": "touch back (backache)",
+      "earlyobs10_index": 1,
+      "earlyobs10_id": "E10-02",
+      "earlyobs10_name": "torso_self_touch_reach",
+      "rule_basis": "self-touch or reach actions centered on torso/pocket region"
+    },
+    "47": {
+      "ntu60_id": 47,
+      "ntu60_label": "touch neck (neckache)",
+      "earlyobs10_index": 1,
+      "earlyobs10_id": "E10-02",
+      "earlyobs10_name": "torso_self_touch_reach",
+      "rule_basis": "self-touch or reach actions centered on torso/pocket region"
+    },
+    "48": {
+      "ntu60_id": 48,
+      "ntu60_label": "nausea or vomiting condition",
+      "earlyobs10_index": 1,
+      "earlyobs10_id": "E10-02",
+      "earlyobs10_name": "torso_self_touch_reach",
+      "rule_basis": "self-touch or reach actions centered on torso/pocket region"
+    },
+    "49": {
+      "ntu60_id": 49,
+      "ntu60_label": "use a fan (with hand or paper)/feeling warm",
+      "earlyobs10_index": 0,
+      "earlyobs10_id": "E10-01",
+      "earlyobs10_name": "hand_to_head_face",
+      "rule_basis": "drink/eat/grooming/health actions with early hand-to-face evidence"
+    },
+    "50": {
+      "ntu60_id": 50,
+      "ntu60_label": "punching/slapping other person",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "51": {
+      "ntu60_id": 51,
+      "ntu60_label": "kicking other person",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "52": {
+      "ntu60_id": 52,
+      "ntu60_label": "pushing other person",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "53": {
+      "ntu60_id": 53,
+      "ntu60_label": "pat on back of other person",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "54": {
+      "ntu60_id": 54,
+      "ntu60_label": "point finger at the other person",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "55": {
+      "ntu60_id": 55,
+      "ntu60_label": "hugging other person",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "56": {
+      "ntu60_id": 56,
+      "ntu60_label": "giving something to other person",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "57": {
+      "ntu60_id": 57,
+      "ntu60_label": "touch other person's pocket",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "58": {
+      "ntu60_id": 58,
+      "ntu60_label": "handshaking",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "59": {
+      "ntu60_id": 59,
+      "ntu60_label": "walking towards each other",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    },
+    "60": {
+      "ntu60_id": 60,
+      "ntu60_label": "walking apart from each other",
+      "earlyobs10_index": 9,
+      "earlyobs10_id": "E10-10",
+      "earlyobs10_name": "interpersonal_action",
+      "rule_basis": "all interpersonal actions"
+    }
+  }
+}

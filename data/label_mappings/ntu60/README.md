@@ -3,6 +3,7 @@
 Machine-readable mapping configs for NTU60 coarse supervision experiments.
 
 Files:
+- early_observable_v2.json
 - semantic_coarse_v1.csv / .json
 - trajectory_coarse_v1.csv / .json
 - semantic_vs_trajectory_comparison.csv

@@ -10,26 +10,25 @@ project:
 literature:
   key_papers: []
   open_problems:
-    - "How to define a stable early-recognition protocol for skeleton sequences without mixing prefix crop and random crop."
     - "Whether coarse intent labels provide real low-ratio gains or only act as generic auxiliary supervision."
     - "Whether full-prefix consistency provides unique value beyond straightforward KD-only baselines."
-    - "How sensitive the final claim is to manual coarse-intent grouping schemes."
+    - "How much value remains in manual coarse-intent grouping once semantic, trajectory, and early-observable taxonomies all fail to beat `prefix_multi` at `0.1 / 0.3`."
   evidence_gaps:
-    - "The canonical NTU60 early-recognition evaluation path is not yet frozen in code."
-    - "No stable SkateFormer-prefix baseline has been logged under the new early protocol."
-    - "No intent mapping table has been finalized."
-    - "No single-module ablation has yet isolated intent or consistency effects."
+    - "No clean KD-only baseline has yet been logged under the locked NTU60 early protocol."
+    - "No consistency-only run has yet separated full-to-prefix guidance from plain distillation."
+    - "The adaptive gated intent-improved line has only been checked at `0.1 / 0.3 / 0.5`; the fixed-taxonomy comparison is now saturated through `early_observable_v2`, but the mechanism-improved row is still partial."
+    - "No XView validation has yet checked whether the XSub baseline story transfers."
 
 hypotheses:
   - id: H0
     statement: "If the early-recognition protocol is frozen before major experiments, later comparisons will remain fair and interpretable."
-    status: active
+    status: supported
     motivation: "Prefix cropping, valid-frame counting, interpolation, and ratio scheduling can easily drift and invalidate comparisons."
     parent: null
     priority: high
   - id: H1
     statement: "Coarse intent labels provide more stable supervision than fine action labels in the low-observation regime and can improve early skeleton recognition."
-    status: active
+    status: challenged
     motivation: "Many classes remain ambiguous early but are already separable at a coarser semantic level."
     parent: null
     priority: high
@@ -54,15 +53,29 @@ hypotheses:
 
 experiments:
   proxy_metric: "Per-ratio Top-1 action accuracy under a fixed early-recognition protocol on NTU60."
-  baseline_value: null
-  best_value: null
-  total_runs: 0
-  trajectory: []
+  baseline_value:
+    prefix_single_r01_top1: 27.66
+    prefix_single_r03_top1: 67.04
+  best_value:
+    prefix_multi_r01_top1: 31.88
+    prefix_multi_r03_top1: 68.92
+    prefix_multi_mean_top1: 76.56
+    full_upper_bound_top1: 91.73
+  total_runs: 8
+  trajectory:
+    - "SkateFormer-full (`1.0 -> 1.0`) reached 91.73% Top-1 on NTU60 XSub."
+    - "Single-ratio prefix baseline at `r=0.3` reached 67.04% Top-1."
+    - "Single-ratio prefix rerun at `r=0.1` reached 27.66% Top-1."
+    - "Multi-ratio prefix baseline reached 31.88% / 68.92% / 85.52% / 90.17% / 91.44% / 91.42% Top-1 over `0.1 / 0.3 / 0.5 / 0.7 / 0.9 / 1.0`."
+    - "Intent-only under `semantic_coarse_v1` reached 31.69% / 67.95% / 85.35% / 90.08% / 91.11% / 91.41% Top-1 and did not beat `prefix_multi` at any tested ratio."
+    - "Intent-only under `trajectory_coarse_v1` reached 31.32% / 68.37% / 85.42% / 90.08% / 91.25% / 91.54% Top-1, modestly improving over the semantic mapping but still trailing `prefix_multi` at `0.1 / 0.3`."
+    - "Intent-only under `early_observable_v2` reached 31.53% / 68.33% / 85.46% / 90.27% / 91.39% / 91.55% Top-1; it is the best fixed intent taxonomy tried so far on average, but still does not beat `prefix_multi` at `0.1 / 0.3`."
+    - "Intent-improved with trajectory mapping, ratio-adaptive intent weights, and intent-to-action bias/gating reached 31.30% / 68.48% / 85.53% Top-1 at `0.1 / 0.3 / 0.5`; it gave small mid-ratio gains over fixed trajectory intent-only but still did not beat `prefix_multi` at `0.1 / 0.3`."
 
 outer_loop:
-  cycle: 0
-  last_direction: "pivot_to_early_skeleton"
-  last_reflection: "The previous acceleration-and-deployment plan is no longer the main line. The project should now lock the early-recognition protocol first, then establish prefix baselines, then validate intent and consistency separately before combining them."
+  cycle: 1
+  last_direction: "stress_test_intent_then_shift_to_teacher_guidance"
+  last_reflection: "The intent line is now saturated enough to stop taxonomy-first iteration. Semantic intent-only was weakest, trajectory intent-only was directionally better, and `early_observable_v2` is now the best fixed taxonomy on average, but all fixed intent rows still miss `prefix_multi` at `0.1 / 0.3`. The adaptive gated refinement only adds small mid-ratio gains and remains partial. The next priority is therefore clearly KD-only and consistency-only."
 
 plan:
   primary_benchmark:
@@ -73,20 +86,20 @@ plan:
     name: "NTU120 early extension"
     status: deferred
     note: "This is a later robustness study, not part of the current baseline-lock phase."
-  current_phase: "H0_protocol_freeze"
+  current_phase: "H2_single-module-ablation"
   plan_document: "research-plan.md"
   milestones:
-    - "Freeze prefix construction and observation-ratio protocol."
-    - "Build the SkateFormer-prefix baseline."
-    - "Validate intent-only, consistency-only, and KD-only separately."
+    - "Freeze prefix construction and observation-ratio protocol. (done)"
+    - "Build the SkateFormer-prefix baseline. (done on XSub for `r=0.1`, `r=0.3`, and multi-ratio)"
+    - "Validate intent-only, consistency-only, and KD-only separately. (intent-only complete; KD-only and consistency-only pending)"
     - "Train and evaluate the full joint model."
     - "Stress-test the claim under multiple intent mappings and XView."
   next_actions:
-    - "Freeze valid-frame counting, prefix crop, interpolation, and fixed-length handling."
-    - "Draft at least two coarse-intent mapping schemes for NTU60."
-    - "Run the canonical SkateFormer-prefix baseline on NTU60 XSub."
-    - "Add multi-ratio training under the same protocol."
-    - "Only after the baseline is stable, start single-module ablations."
+    - "Implement and run KD-only under the locked NTU60 XSub early-recognition protocol."
+    - "Run consistency-only and keep the naming honest if it reduces to ordinary KD."
+    - "Use the completed semantic, trajectory, `early_observable_v2`, and adaptive-gated intent rows as the intent reference set."
+    - "Only if teacher-guided baselines show value, continue to uncertainty-aware consistency rather than another intent-taxonomy tweak."
+    - "Defer XView and NTU120 until the simpler H2 gain sources are separated cleanly."
 
 workspace:
   findings: "findings.md"

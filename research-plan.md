@@ -10,10 +10,13 @@
 
 The project has pivoted away from the earlier acceleration-and-deployment plan for rehabilitation exoskeleton control. That direction is now deprecated as the main line of work. The current primary research thread is early skeleton action recognition.
 
-The new focus is to build a clean early-recognition protocol on `NTU60`, establish a strong `SkateFormer-prefix` baseline, and then test whether two lightweight ideas improve low-observation-ratio performance:
+The new focus is to build a clean early-recognition protocol on `NTU60`, establish a strong `SkateFormer-prefix` baseline, and then test whether a small set of lightweight ideas improve low-observation-ratio performance:
 
-- coarse intent supervision
+- fixed coarse intent supervision
 - full-prefix consistency learning
+- ratio-adaptive coarse-to-fine semantic supervision
+- uncertainty-aware full-to-prefix consistency
+- optional confusion-aware language prototype distillation
 
 The intended contribution is not a heavy pipeline. The design goal is a simple and reproducible early-recognition framework that uses only action labels plus manually organized coarse intent labels, while using the full sequence only during training as a stabilizing reference.
 
@@ -38,6 +41,7 @@ The intended contribution is not a heavy pipeline. The design goal is a simple a
 - **Method validity:** At least one of `intent-only`, `consistency-only`, or `full model` improves low observation ratios over the prefix baseline
 - **Ablation completeness:** Clear separation of gains from `multi-ratio`, `intent`, `consistency`, and `KD-only`
 - **Narrative stability:** The final claim must remain valid under at least two coarse-intent mapping schemes
+- **Refinement honesty:** Any improved intent or consistency variant must be compared against the plain `intent-only` and `KD-only` references rather than replacing them silently
 
 ## Research Hypotheses
 
@@ -70,6 +74,12 @@ The joint model will produce its clearest gains at `0.1` and `0.3`, while benefi
 If the method remains useful under multiple coarse-intent grouping schemes, the contribution is more likely to reflect a real modeling effect rather than a fragile manual taxonomy.
 
 **Reason this matters:** Coarse intent labels are partly human-designed and must be stress-tested for robustness.
+
+## Near-Term Refinement Candidates
+
+- **Intent-improved:** Replace one fixed coarse label target with ratio-adaptive coarse-to-fine supervision so that very low ratios emphasize stable semantics while higher ratios shift weight toward fine action discrimination.
+- **Consistency-improved:** Replace plain full-to-prefix KL with uncertainty-aware consistency so that the full branch teaches most strongly when its own prediction is reliable.
+- **Optional advanced variant:** Add confusion-aware language prototype distillation only if the lighter semantic and consistency variants have already produced a stable `NTU60` story.
 
 ## Phase Plan
 
@@ -108,8 +118,11 @@ If the method remains useful under multiple coarse-intent grouping schemes, the 
 
 **Outputs**
 - `intent-only`
+- `intent-improved` if plain intent supervision is too weak
 - `consistency-only`
+- `uncertainty-aware consistency` if plain consistency collapses to ordinary KD
 - `KD-only` or equivalent teacher-guided baseline
+- Optional `language-prototype distillation`
 - Comparison table against prefix and multi-ratio baselines
 
 **Exit Criteria**
@@ -121,7 +134,7 @@ If the method remains useful under multiple coarse-intent grouping schemes, the 
 **Goal:** Test the joint method.
 
 **Outputs**
-- Joint `intent + consistency` model
+- Joint `intent + consistency` model, using either the plain modules or the stronger refined variants
 - Main result table across observation ratios
 - Error analysis by action type and confusion pattern
 
@@ -149,6 +162,8 @@ If the method remains useful under multiple coarse-intent grouping schemes, the 
 - Prefix construction must be identical across all compared methods
 - If `consistency` is implemented as simple distillation, name it honestly and avoid inflated novelty claims
 - Claims about intent supervision must be checked against more than one label grouping
+- Plain `intent-only` remains a required reference even if `intent-improved` is later added
+- Optional language-based supervision is training-time only unless a stronger justification emerges
 
 ## Outer-Loop Triggers
 
@@ -167,6 +182,8 @@ Run an outer-loop synthesis when any of the following happens:
 3. Implement and run the canonical `SkateFormer-prefix` baseline on `XSub`.
 4. Add `multi-ratio` training under the same protocol.
 5. Add `intent-only`, `consistency-only`, and `KD-only` before training the full joint model.
+6. If plain `intent-only` remains weak, test `intent-improved` as a ratio-adaptive semantic refinement instead of overwriting the original baseline.
+7. If plain `consistency-only` reduces to ordinary distillation, test an uncertainty-aware variant before claiming a distinct consistency contribution.
 
 ## Kill Criteria And Decision Points
 
