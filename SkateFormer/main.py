@@ -114,6 +114,12 @@ def get_parser():
     parser.add_argument('--intent-loss-weight', type=float, default=0.0, help='loss weight for auxiliary coarse-intent supervision')
     parser.add_argument('--intent-loss-weight-by-ratio', action=DictAction, default=None,
                         help='per-ratio auxiliary intent weights, e.g. 0.1=1.0 0.3=0.8')
+    parser.add_argument('--consistency-loss-weight', type=float, default=0.0,
+                        help='loss weight for full-to-prefix consistency KL')
+    parser.add_argument('--consistency-temperature', type=float, default=2.0,
+                        help='temperature for the consistency KL loss')
+    parser.add_argument('--consistency-detach-full', type=str2bool, default=True,
+                        help='treat the full-sequence view as a detached teacher target')
 
     # optim
     parser.add_argument('--base-lr', type=float, default=0.01, help='initial learning rate')
@@ -162,6 +168,7 @@ class Processor():
 
         self.global_step = 0
         self.load_model()
+        self.load_consistency_supervision()
         self.load_intent_supervision()
         self.load_data()
 
@@ -298,6 +305,15 @@ class Processor():
                 f'model intent_num_classes={model_intent_classes} does not match mapping classes={expected_intent_classes}.'
             )
 
+    def load_consistency_supervision(self):
+        self.consistency_loss_weight = float(getattr(self.arg, 'consistency_loss_weight', 0.0))
+        self.consistency_temperature = float(getattr(self.arg, 'consistency_temperature', 2.0))
+        self.consistency_detach_full = bool(getattr(self.arg, 'consistency_detach_full', True))
+        self.use_consistency = self.consistency_loss_weight > 0.0
+
+        if self.consistency_temperature <= 0:
+            raise ValueError('consistency_temperature must be positive.')
+
     def get_intent_loss_weights(self, observation_ratio, batch_size, device):
         if observation_ratio is None:
             return torch.full((batch_size,), self.intent_loss_weight, dtype=torch.float32, device=device)
@@ -325,21 +341,28 @@ class Processor():
         return output, {}
 
     def unpack_batch(self, batch):
+        full_data = None
+        full_index_t = None
         if len(batch) == 4:
             data, index_t, label, index = batch
             observation_ratio = None
         elif len(batch) == 5:
             data, index_t, label, index, observation_ratio = batch
+        elif len(batch) == 6:
+            data, index_t, full_data, full_index_t, label, index = batch
+            observation_ratio = None
+        elif len(batch) == 7:
+            data, index_t, full_data, full_index_t, label, index, observation_ratio = batch
         else:
-            raise ValueError(f'Expected batch with 4 or 5 items, got {len(batch)}.')
-        return data, index_t, label, index, observation_ratio
+            raise ValueError(f'Expected batch with 4, 5, 6, or 7 items, got {len(batch)}.')
+        return data, index_t, label, index, observation_ratio, full_data, full_index_t
 
-    def compute_losses(self, output, label, observation_ratio=None):
+    def compute_supervised_losses(self, output, label, observation_ratio=None, include_intent=True):
         action_output, aux_output = self.unpack_model_output(output)
         total_loss = self.loss(action_output, label)
         loss_stats = {}
 
-        if self.intent_loss is not None:
+        if include_intent and self.intent_loss is not None:
             if 'intent' not in aux_output:
                 raise ValueError('Intent supervision is enabled but model output does not provide intent logits.')
             intent_target = self.intent_label_map[label]
@@ -358,6 +381,13 @@ class Processor():
             loss_stats['intent_acc'] = (intent_pred == intent_target).float().mean().detach().item()
 
         return action_output, total_loss, loss_stats
+
+    def compute_consistency_loss(self, prefix_logits, full_logits):
+        temperature = self.consistency_temperature
+        teacher_logits = full_logits.detach() if self.consistency_detach_full else full_logits
+        target_probs = F.softmax(teacher_logits / temperature, dim=-1)
+        log_probs = F.log_softmax(prefix_logits / temperature, dim=-1)
+        return F.kl_div(log_probs, target_probs, reduction='batchmean') * (temperature ** 2)
 
     def load_optimizer(self):
         if self.arg.optimizer == 'SGD':
@@ -438,6 +468,8 @@ class Processor():
 
         loss_value = []
         acc_value = []
+        prefix_loss_value = []
+        consistency_loss_value = []
         intent_loss_value = []
         intent_weighted_loss_value = []
         intent_acc_value = []
@@ -448,7 +480,7 @@ class Processor():
         process = tqdm(loader)
 
         for batch_idx, batch in enumerate(process):
-            data, index_t, label, index, observation_ratio = self.unpack_batch(batch)
+            data, index_t, label, index, observation_ratio, full_data, full_index_t = self.unpack_batch(batch)
             self.lr_scheduler.step_update(self.global_step)
             self.global_step += 1
             with torch.no_grad():
@@ -457,11 +489,32 @@ class Processor():
                 label = label.long().to(self.device)
                 if observation_ratio is not None:
                     observation_ratio = observation_ratio.float().to(self.device)
+                if full_data is not None:
+                    full_data = full_data.float().to(self.device)
+                if full_index_t is not None:
+                    full_index_t = full_index_t.float().to(self.device)
             timer['dataloader'] += self.split_time()
 
             # forward
             model_output = self.model(data, index_t)
-            output, loss, aux_stats = self.compute_losses(model_output, label, observation_ratio=observation_ratio)
+            output, prefix_loss, aux_stats = self.compute_supervised_losses(
+                model_output, label, observation_ratio=observation_ratio, include_intent=True
+            )
+            loss = prefix_loss
+            prefix_loss_value.append(prefix_loss.detach().item())
+
+            if self.use_consistency:
+                if full_data is None or full_index_t is None:
+                    raise ValueError(
+                        'consistency baseline requires the feeder to return full-sequence views. '
+                        'Set train_feeder_args.return_full_sequence=True.'
+                    )
+                full_model_output = self.model(full_data, full_index_t)
+                full_output, _ = self.unpack_model_output(full_model_output)
+                consistency_loss = self.compute_consistency_loss(output, full_output)
+                loss = prefix_loss + self.consistency_loss_weight * consistency_loss
+                aux_stats['consistency_loss'] = consistency_loss.detach().item()
+                consistency_loss_value.append(consistency_loss.detach().item())
 
             # backward
             self.optimizer.zero_grad()
@@ -478,6 +531,9 @@ class Processor():
             acc_value.append(acc.data.item())
             self.train_writer.add_scalar('acc', acc, self.global_step)
             self.train_writer.add_scalar('loss', loss.data.item(), self.global_step)
+            self.train_writer.add_scalar('prefix_action_loss', prefix_loss.detach().item(), self.global_step)
+            if 'consistency_loss' in aux_stats:
+                self.train_writer.add_scalar('consistency_loss', aux_stats['consistency_loss'], self.global_step)
             if 'intent_loss' in aux_stats:
                 intent_loss_value.append(aux_stats['intent_loss'])
                 intent_weighted_loss_value.append(aux_stats['intent_weighted_loss'])
@@ -501,6 +557,9 @@ class Processor():
         self.print_log(
             '\tMean training loss: {:.4f}.  Mean training acc: {:.2f}%.'.format(np.mean(loss_value),
                                                                                 np.mean(acc_value) * 100))
+        self.print_log('\tMean prefix action loss: {:.4f}.'.format(np.mean(prefix_loss_value)))
+        if consistency_loss_value:
+            self.print_log('\tMean consistency KL loss: {:.4f}.'.format(np.mean(consistency_loss_value)))
         if intent_loss_value:
             self.print_log(
                 '\tMean intent loss: {:.4f}.  Mean weighted intent loss: {:.4f}.  Mean intent acc: {:.2f}%.  Mean intent lambda: {:.4f}.'.format(
@@ -537,7 +596,7 @@ class Processor():
             step = 0
             process = tqdm(self.data_loader[ln])
             for batch_idx, batch in enumerate(process):
-                data, index_t, label, index, observation_ratio = self.unpack_batch(batch)
+                data, index_t, label, index, observation_ratio, _full_data, _full_index_t = self.unpack_batch(batch)
                 label_list.append(label)
                 with torch.no_grad():
                     data = data.float().to(self.device)
@@ -546,8 +605,8 @@ class Processor():
                     if observation_ratio is not None:
                         observation_ratio = observation_ratio.float().to(self.device)
                     model_output = self.model(data, index_t)
-                    output, loss, aux_stats = self.compute_losses(
-                        model_output, label, observation_ratio=observation_ratio
+                    output, loss, aux_stats = self.compute_supervised_losses(
+                        model_output, label, observation_ratio=observation_ratio, include_intent=True
                     )
                     score_frag.append(output.data.cpu().numpy())
                     loss_value.append(loss.data.item())

@@ -9,7 +9,7 @@ class Feeder(Dataset):
     def __init__(self, data_path, label_path=None, p_interval=1, split='train', data_type='j',
                  aug_method='z', intra_p=0.5, inter_p=0.0, window_size=-1,
                  debug=False, thres=64, uniform=False, partition=False, joint_indices=None, num_people=2,
-                 temporal_crop_mode='crop', observation_ratio=None):
+                 temporal_crop_mode='crop', observation_ratio=None, return_full_sequence=False):
 
         self.debug = debug
         self.data_path = data_path
@@ -28,6 +28,7 @@ class Feeder(Dataset):
         self.num_people = 2
         self.temporal_crop_mode = temporal_crop_mode
         self.observation_ratio = self._normalize_observation_ratio(observation_ratio)
+        self.return_full_sequence = bool(return_full_sequence)
         self.out_num_people = int(num_people)
         if self.out_num_people not in (1, 2):
             raise ValueError(f'num_people must be 1 or 2, got {self.out_num_people}')
@@ -122,6 +123,42 @@ class Feeder(Dataset):
     def __iter__(self):
         return self
 
+    def _build_temporal_view(self, data_numpy, valid_frame_num, observation_ratio):
+        if self.uniform:
+            return tools.valid_prefix_uniform(
+                data_numpy, valid_frame_num, observation_ratio, self.window_size, self.thres
+            )
+        return tools.valid_prefix_resize(
+            data_numpy, valid_frame_num, observation_ratio, self.window_size, self.thres
+        )
+
+    def _apply_modality_and_partition(self, data_numpy):
+        if self.data_type == 'b':
+            j2b = tools.joint2bone()
+            data_numpy = j2b(data_numpy)
+        elif self.data_type == 'jm':
+            data_numpy = tools.to_motion(data_numpy)
+        elif self.data_type == 'bm':
+            j2b = tools.joint2bone()
+            data_numpy = j2b(data_numpy)
+            data_numpy = tools.to_motion(data_numpy)
+        else:
+            data_numpy = data_numpy.copy()
+
+        if self.partition:
+            data_numpy = data_numpy[:, :, self.joint_indices]
+            if self.keep_joint_indices is not None:
+                keep_mask = np.isin(self.joint_indices, self.keep_joint_indices)
+                data_numpy[:, :, ~keep_mask] = 0
+        else:
+            if self.keep_joint_indices is not None:
+                data_numpy = data_numpy[:, :, self.keep_joint_indices]
+
+        if self.out_num_people == 1 and data_numpy.shape[-1] != 1:
+            data_numpy = data_numpy[:, :, :, :1]
+
+        return data_numpy
+
     def __getitem__(self, index):
         data_numpy = self.data[index]
         label = self.label[index]
@@ -131,18 +168,20 @@ class Feeder(Dataset):
             data_numpy = data_numpy[:, :, :, :1]
         valid_frame_num = np.sum(data_numpy.sum(0).sum(-1).sum(-1) != 0)
         num_people = np.sum(data_numpy.sum(0).sum(0).sum(0) != 0)
+        full_data_numpy = None
+        full_index_t = None
+
+        if self.return_full_sequence:
+            full_data_numpy, full_index_t = self._build_temporal_view(
+                data_numpy, valid_frame_num, observation_ratio=1.0
+            )
 
         if self.temporal_crop_mode == 'prefix':
             observation_ratio = self._sample_observation_ratio()
             sampled_observation_ratio = np.float32(observation_ratio)
-            if self.uniform:
-                data_numpy, index_t = tools.valid_prefix_uniform(
-                    data_numpy, valid_frame_num, observation_ratio, self.window_size, self.thres
-                )
-            else:
-                data_numpy, index_t = tools.valid_prefix_resize(
-                    data_numpy, valid_frame_num, observation_ratio, self.window_size, self.thres
-                )
+            data_numpy, index_t = self._build_temporal_view(
+                data_numpy, valid_frame_num, observation_ratio=observation_ratio
+            )
         else:
             if self.uniform:
                 data_numpy, index_t = tools.valid_crop_uniform(data_numpy, valid_frame_num, self.p_interval,
@@ -201,30 +240,10 @@ class Feeder(Dataset):
             else:
                 data_numpy = data_numpy.copy()
 
-        # modality
-        if self.data_type == 'b':
-            j2b = tools.joint2bone()
-            data_numpy = j2b(data_numpy)
-        elif self.data_type == 'jm':
-            data_numpy = tools.to_motion(data_numpy)
-        elif self.data_type == 'bm':
-            j2b = tools.joint2bone()
-            data_numpy = j2b(data_numpy)
-            data_numpy = tools.to_motion(data_numpy)
-        else:
-            data_numpy = data_numpy.copy()
-
-        if self.partition:
-            data_numpy = data_numpy[:, :, self.joint_indices]
-            if self.keep_joint_indices is not None:
-                keep_mask = np.isin(self.joint_indices, self.keep_joint_indices)
-                data_numpy[:, :, ~keep_mask] = 0
-        else:
-            if self.keep_joint_indices is not None:
-                data_numpy = data_numpy[:, :, self.keep_joint_indices]
-
-        if self.out_num_people == 1 and data_numpy.shape[-1] != 1:
-            data_numpy = data_numpy[:, :, :, :1]
+        data_numpy = self._apply_modality_and_partition(data_numpy)
+        if full_data_numpy is not None:
+            full_data_numpy = self._apply_modality_and_partition(full_data_numpy)
+            return data_numpy, index_t, full_data_numpy, full_index_t, label, index, sampled_observation_ratio
 
         return data_numpy, index_t, label, index, sampled_observation_ratio
 
