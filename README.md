@@ -1,18 +1,16 @@
 # Skeleton-Based HAR Acceleration
 
-This repository is now organized around one primary research line: accelerating `SkateFormer`-style skeleton action recognition, with the current branch explicitly using `ACmix`-style shared projection as the main design reference.
+This repository is now organized around one primary research line: operator-level inference acceleration for pruned `SkateFormer`.
 
-The active question is no longer early action recognition from partial prefixes. The active question is whether the current `SkateFormerBlock` can be restructured for a better accuracy-latency-FLOPs Pareto frontier, while keeping the benchmark centered on standard full-sequence skeleton classification.
+The active question is no longer early action recognition from partial prefixes, and it is also no longer primarily about training-backed block redesign. The current question is whether the existing implementation can be rewritten into faster inference operators without requiring full retraining.
 
 ## Current Focus
 
-- Task: compute acceleration for full-sequence skeleton action recognition
+- Task: operator-level inference acceleration for pruned skeleton action recognition
 - Backbone: `SkateFormer`
-- Reference direction: `ACmix`-style shared projection plus lightweight dual aggregation
-- Primary benchmark: `NTU60`
-- Split order: `XSub` first, `XView` second
-- Primary metrics: `Top-1`, latency, throughput, `GFLOPs`, parameter count
-- Main question: can we reduce real inference cost without paying an unacceptable accuracy penalty?
+- Primary benchmark shape: `B=1, C=192, T=64, V=14`
+- Primary metrics: latency, throughput, parameter count, numerical difference
+- Main question: can we reduce real inference cost through exact or near-exact rewrites of the existing implementation?
 
 ## Repository Map
 
@@ -20,14 +18,16 @@ The active question is no longer early action recognition from partial prefixes.
   Backbone code plus local training, evaluation, and benchmarking utilities.
 - `SkateFormer/tools/benchmark_inference.py`
   Canonical local latency and FLOPs measurement entry point.
+- `SkateFormer/tools/benchmark_block_redesign.py`
+  Existing local block benchmark utility; use only if structural comparison is still needed later.
 - `experiments/acceleration_baseline_note.md`
   Acceleration-oriented baseline note, including the older pruning table and current benchmark conventions.
 - `experiments/H0_protocol-freeze/`, `H1_prefix-baseline/`, `H2_single-module-ablation/`, `H3_joint-model-and-robustness/`
   Archived material from the earlier early-recognition direction. Keep for record only; do not treat as the current benchmark definition.
 - `research-plan.md`
-  Main acceleration plan in English.
+  Main operator-acceleration plan in English.
 - `acceleration_research_plan.md`
-  Detailed execution-oriented acceleration plan in Chinese.
+  Detailed execution-oriented operator-acceleration plan in Chinese.
 - `research-state.yaml`
   Central project tracking state.
 - `findings.md`
@@ -37,4 +37,4 @@ The active question is no longer early action recognition from partial prefixes.
 
 ## Archive Note
 
-The previous early-recognition line remains in the repository as archived context. Its experiment folders, label-mapping files, and notes are no longer the active research plan for this branch.
+The previous early-recognition line and the later block-redesign line remain in the repository as archived context. They are not the active research plan for this branch.

@@ -1,106 +1,96 @@
 # Research State — Central Project Tracking
 
 project:
-  title: "ACmix-Inspired Compute Acceleration for SkateFormer-Based Skeleton Action Recognition"
-  question: "How can SkateFormer be redesigned to reduce real inference cost while preserving strong full-sequence recognition accuracy on standard skeleton benchmarks?"
+  title: "Operator-Level Inference Acceleration for Pruned SkateFormer"
+  question: "How can the current pruned SkateFormer implementation be accelerated through mathematically equivalent operator rewrites, without requiring full retraining?"
   status: active
-  started: "2026-07-27"
-  domain: "computer vision, skeleton-based action recognition, model acceleration"
+  started: "2026-07-28"
+  domain: "computer vision, skeleton-based action recognition, inference optimization"
 
 literature:
   key_papers:
     - "Pan et al., On the Integration of Self-Attention and Convolution (CVPR 2022, arXiv:2111.14556)"
     - "SkateFormer: Skeletal-Temporal Transformer for Human Action Recognition"
   open_problems:
-    - "Which part of the current SkateFormer block dominates real latency under the repository's benchmark path."
-    - "How far ACmix-style shared projection can be adapted to skeleton temporal-joint tokens without hurting accuracy."
-    - "Whether stage-wise replacement yields a better Pareto frontier than an all-stage rewrite."
-    - "Whether FLOPs savings will translate to real latency savings once partition and memory-movement overhead is included."
-    - "Whether the stronger paper direction is a block-level redesign that removes explicit partition and concat-projection structure, rather than a narrow operator optimization."
+    - "How much latency can be removed by exact operator rewrites alone under `B=1, C=192, T=64, V=14`."
+    - "Whether `cat + proj` can be rewritten cleanly as a sum of branch-wise projections in the current implementation."
+    - "Whether channel-first `1x1 Conv` rewrites outperform the current channel-last `Linear` layout path."
+    - "Whether fused graph operations provide measurable benefit under low-batch inference."
   evidence_gaps:
-    - "No fresh baseline latency table has been logged under the new branch definition."
-    - "No module-level profile has yet separated `mapping`, `proj`, `mlp`, and partitioned attention overhead."
-    - "No ACmix-style skeleton block has yet been implemented or benchmarked in this branch."
-    - "No matched XView validation exists for the new acceleration line."
+    - "No operator-only benchmark table has yet been logged for the new branch."
+    - "No numerical-equivalence table has yet been logged for the proposed rewrites."
+    - "No cumulative speedup result exists from composing exact rewrites."
 
 hypotheses:
   - id: H0
-    statement: "If the accuracy path and inference benchmark are frozen before architecture changes, later acceleration claims will remain fair and interpretable."
+    statement: "The main short-term acceleration opportunity is implementation-level operator rewriting rather than a new train-from-scratch block design."
     status: active
-    motivation: "Batch size, device, input shape, warmup, and checkpoint quality can easily drift and invalidate speed comparisons."
+    motivation: "Training budget is constrained, so the branch should prioritize acceleration that can be verified without retraining."
     parent: null
     priority: high
   - id: H1
-    statement: "An ACmix-style shared-projection redesign can reduce compute while preserving competitive SkateFormer accuracy."
+    statement: "The existing `cat + proj` path can be algebraically rewritten as a sum of branch-specific projections while preserving the same function."
     status: active
-    motivation: "The current block already mixes several aggregation paths, so the main opportunity is to reduce how much expensive channel mixing is done around them."
+    motivation: "This removes explicit concatenation from the hot path without changing model semantics."
     parent: null
     priority: high
   - id: H2
-    statement: "Partial stage replacement will outperform full-model replacement on the first acceleration Pareto frontier."
+    statement: "Channel-last `Linear` paths can be replaced with channel-first `1x1 Conv2d` equivalents and reduce layout overhead."
     status: active
-    motivation: "Different stages likely have different sensitivity to long-range modeling and local aggregation."
+    motivation: "A large fraction of current layout conversion exists only to feed `Linear` and `LayerNorm` in channel-last form."
     parent: null
     priority: high
   - id: H3
-    statement: "Teacher-guided recovery will be a cheaper accuracy-repair path than reintroducing heavy modules."
+    statement: "The current graph branch loop can be fused into a larger batched operation with measurable inference benefit."
     status: active
-    motivation: "The branch objective is acceleration, so accuracy repair should stay lightweight."
+    motivation: "Low-batch inference is sensitive to many small Python-driven tensor ops."
     parent: null
     priority: medium
   - id: H4
-    statement: "A useful acceleration claim must survive both FLOPs accounting and wall-clock latency measurement."
+    statement: "Operator-level benchmark conclusions must be drawn from the real pruned target regime, not generic large-batch settings."
     status: active
-    motivation: "Implementation overhead can erase theoretical savings."
+    motivation: "The branch is specifically about low-`V`, low-batch inference."
     parent: null
     priority: medium
-  - id: H5
-    statement: "For pruned low-V inference, a partition-free and branch-collapsed block redesign is more defensible as the main research contribution than isolated operator tuning."
-    status: active
-    motivation: "The paper-worthy problem is likely the block organization itself: explicit partition, branch materialization, and concat-projection fusion."
-    parent: null
-    priority: high
 
 experiments:
-  proxy_metric: "Accuracy-latency-FLOPs Pareto frontier under a fixed full-sequence NTU60 benchmark."
+  proxy_metric: "Latency improvement with negligible output difference under the target pruned inference shape."
   baseline_value: {}
   best_value: {}
   total_runs: 0
   trajectory:
-    - "Branch pivoted on 2026-07-27; early-recognition results are archived and no longer define the active baseline."
-    - "The first required output is a fresh baseline table for unmodified SkateFormer under the new benchmark definition."
-    - "The paper direction has now been narrowed from generic ACmix inspiration to a partition-free / branch-collapsed / cat-proj-free block redesign for pruned low-V inference."
+    - "Branch `fast_op` was created to study operator-level acceleration instead of training-backed block redesign."
+    - "The benchmark target is now explicitly `B=1, C=192, T=64, V=14`."
 
 outer_loop:
   cycle: 0
-  last_direction: "reset_to_acceleration_benchmark_freeze"
-  last_reflection: "The branch has intentionally cleared the previous early-recognition narrative. The next priority is still to freeze one clean acceleration benchmark and profile the current SkateFormer block, but the method story is now more specific: use ACmix only as inspiration and target a partition-free / branch-collapsed / cat-proj-free redesign for the pruned low-V regime."
+  last_direction: "pivot_to_operator_acceleration"
+  last_reflection: "The branch objective is now narrower and more practical: accelerate the existing implementation through exact rewrites that can be benchmarked immediately, and postpone training-backed structural claims."
 
 plan:
   primary_benchmark:
-    name: "NTU60 full-sequence skeleton action recognition with matched compute benchmarking"
+    name: "Pruned low-V SkateFormer inference benchmark"
     status: active_freeze
-    note: "Use XSub first, then XView. The benchmark must always report both recognition quality and compute cost."
+    note: "Use the real target shape `B=1, C=192, T=64, V=14` on GPU first."
   secondary_benchmark:
-    name: "NTU120 or reduced-joint extension"
-    status: deferred
-    note: "This is a later robustness study, not part of the current baseline-freeze phase."
-  current_phase: "A0_compute-baseline-freeze"
+    name: "Composed operator-rewrite benchmark"
+    status: pending
+    note: "This benchmark combines multiple exact rewrites after they are individually validated."
+  current_phase: "O0_operator-benchmark-freeze"
   plan_document: "research-plan.md"
   detailed_plan_document: "acceleration_research_plan.md"
   milestones:
-    - "Freeze the canonical accuracy and inference benchmark paths."
-    - "Build a fresh baseline table for unmodified SkateFormer."
-    - "Profile the current block and decide whether the main issue is operator cost or block organization."
-    - "Implement and benchmark a partition-free / branch-collapsed redesign prototype."
-    - "Separate stage-wise replacement, width reduction, and optional distillation effects."
-    - "Validate the best variant on XView before making a broader claim."
+    - "Freeze the operator benchmark and validation protocol."
+    - "Build a fresh latency baseline for the current implementation."
+    - "Implement `cat + proj` rewrite and validate exactness."
+    - "Implement `Linear -> 1x1 Conv` rewrite and validate exactness."
+    - "Implement fused graph rewrite and measure isolated gain."
+    - "Measure cumulative speedup from composed rewrites."
   next_actions:
-    - "Write down the canonical baseline benchmark command using `SkateFormer/tools/benchmark_inference.py`."
-    - "Measure the baseline model under fixed input and device settings."
-    - "Inspect whether the paper-worthy issue is explicit partition / branch materialization / concat-projection rather than one isolated operator."
-    - "Prototype a skeleton-specific partition-free and branch-collapsed block before broader architecture churn."
-    - "Treat archived early-recognition files as history only, not as active evidence."
+    - "Write down the canonical operator benchmark command."
+    - "Benchmark the current block under the target shape."
+    - "Prioritize exact rewrites before any training-backed redesign."
+    - "Treat structural block changes as out of scope for this branch unless operator-only gains plateau."
 
 workspace:
   findings: "findings.md"

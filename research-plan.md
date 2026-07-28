@@ -2,200 +2,162 @@
 
 ## Project
 
-**Title:** ACmix-Inspired Compute Acceleration for SkateFormer-Based Skeleton Action Recognition
+**Title:** Operator-Level Inference Acceleration for Pruned SkateFormer
 
-**Primary Question:** How can the current `SkateFormer` backbone be restructured to reduce real inference cost, especially the dominant channel-mixing and multi-branch aggregation overhead, while preserving strong full-sequence recognition accuracy?
+**Primary Question:** How can the current pruned `SkateFormer` implementation be accelerated at inference time through mathematically equivalent operator rewrites, without requiring full retraining?
 
 ## Executive Summary
 
-The branch has pivoted back to computation acceleration as the primary line of work. The earlier early-recognition plan is now archived for this branch and should not define the benchmark, success criteria, or method design.
+This branch is no longer centered on block redesign as the primary research line. The active goal is operator-level acceleration: keep the functional form as unchanged as possible, rewrite expensive implementation patterns into more inference-friendly operators, and validate the gain with direct latency benchmarks plus numerical-equivalence checks.
 
-The new focus is to treat `SkateFormer` as the baseline system, profile where the current block spends computation, and then design an `ACmix`-inspired replacement that shares feature generation across attention-like and convolution-like aggregation paths. The goal is not to paste an image-model block blindly into a skeleton model. The goal is to use the `ACmix` design principle to build a skeleton-specific acceleration path that is measurable on real latency, not only on paper FLOPs.
+The branch is explicitly scoped to a pruned low-`V` inference regime, with the current reference shape:
 
-The first active plan is to:
+- `B=1`
+- `C=192`
+- `T=64`
+- `V=14`
 
-- freeze one canonical compute benchmark on `NTU60`
-- profile the current `SkateFormerBlock`
-- redesign the `SkateFormerBlock` around a partition-free and branch-collapsed mixer
-- compare stage-wise replacement variants
-- validate a real Pareto improvement under matched accuracy evaluation
-
-The current paper-facing hypothesis is now more specific than a generic `ACmix` transplant. For the pruned small-joint regime, especially `B=1` and `V=14`, the most defensible contribution is to remove explicit `partition -> reverse -> cat -> proj` style structure as a block-design principle, not merely to micro-optimize one tensor op.
+The intended contribution is not a new learning algorithm. It is a principled inference-time acceleration study for `SkateFormer`, built around exact or near-exact rewrites of the existing block computation graph.
 
 ## Locked Scope
 
-- **Primary task:** Full-sequence skeleton action recognition with explicit compute acceleration
-- **Primary backbone:** `SkateFormer`
-- **Primary dataset:** `NTU60`
-- **Primary protocols:** `XSub`, `XView`
-- **Primary input convention:** `T=64`, `V=25`, `M=2` unless a pruning variant explicitly changes it
-- **Execution environment:** Run `SkateFormer` training and evaluation inside the `conda` environment `skateformer`
-- **Primary comparison target:** Unmodified `SkateFormer` under matched data and benchmark settings
-- **Primary reference paper:** `On the Integration of Self-Attention and Convolution (ACmix)`
-- **Primary outputs:** model variants, latency tables, FLOPs tables, parameter tables, accuracy tables
-- **Deferred extension:** `NTU120`, device-specific deployment work, quantization
-- **Explicitly archived line:** Early skeleton action recognition from partial prefixes
+- **Primary task:** Inference acceleration for pruned `SkateFormer`
+- **Primary setting:** `B=1, C=192, T=64, V=14`
+- **Primary goal:** Reduce real latency without full retraining
+- **Primary method family:** operator-level equivalent rewrites
+- **Primary benchmark:** latency, throughput, parameter count, optional memory footprint
+- **Primary validation:** numerical equivalence or output closeness under fixed weights
+- **Execution environment:** local `skateformer` Python environment with GPU benchmarking
+- **Explicitly de-emphasized line:** large block redesign that requires full end-to-end retraining
 
 ## Hard Success Criteria
 
-- **Benchmark clarity:** One fixed accuracy path and one fixed inference-benchmark path
-- **Profiling clarity:** The dominant cost inside the current block is measured before redesign claims are made
-- **Method validity:** At least one acceleration variant improves the accuracy-latency or accuracy-FLOPs Pareto frontier over baseline
-- **Ablation completeness:** Gains from block redesign, stage-wise replacement, width reduction, and optional pruning are separated cleanly
-- **Latency honesty:** Real wall-clock speedup must be reported alongside FLOPs
-- **Narrative discipline:** If a variant only reduces FLOPs but not latency, the claim must be narrowed accordingly
+- **Inference honesty:** Every claimed speedup must be measured on real wall-clock latency.
+- **Functional honesty:** Every operator rewrite must be checked by output-difference tests against the original implementation.
+- **No hidden retraining dependency:** A result should remain meaningful even before full model retraining.
+- **Operator isolation:** Each gain source must be attributable to one rewrite rather than broad architecture drift.
+- **Practical relevance:** The benchmark must reflect the actual pruned target regime rather than generic large-batch training settings.
 
 ## Research Hypotheses
 
-### H0: Benchmark Freeze
+### H0: The Main Opportunity Is Implementation, Not New Modeling
 
-If the accuracy protocol and inference benchmark are frozen before major redesign, later claims about acceleration will remain fair and interpretable.
+For the current branch goal, the most actionable speedups come from rewriting operators and tensor layouts rather than inventing a new block that needs full retraining.
 
-**Reason this matters:** Acceleration results are easy to distort when batch size, device, input shape, warmup, or checkpoint quality drift across runs.
+**Reason this matters:** The current training budget is limited, so implementation-level gains have higher immediate value.
 
-### H1: ACmix-Style Shared Projection Can Improve The Pareto Frontier
+### H1: `cat + proj` Can Be Rewritten Without Changing The Function
 
-The current block can be redesigned around a more aggressive shared-projection budget so that attention-like and convolution-like aggregation reuse the same intermediate features and reduce total compute at comparable accuracy.
+The current concat-projection fusion can be algebraically rewritten into a sum of branch-specific projections, removing explicit concatenation overhead while preserving the same output.
 
-**Reason this matters:** The current model already mixes graph, temporal, and attention branches, so the main opportunity is not adding more branches, but simplifying how expensive channel mixing is produced and consumed.
+**Reason this matters:** This directly targets an existing cost center without changing model semantics.
 
-### H2: Partial Replacement Will Beat Full Replacement Early
+### H2: Channel-Last `Linear` Paths Can Be Replaced By Channel-First `1x1 Conv`
 
-Replacing only the most expensive or least cost-effective stages will produce a better early Pareto frontier than replacing every block at once.
+The current `Linear`-based channel mixing inside the block can be rewritten as `1x1 Conv2d` under channel-first layout, reducing layout conversion overhead while preserving the same transformation.
 
-**Reason this matters:** Different stages may have different sensitivity to attention-range modeling versus local aggregation.
+**Reason this matters:** Many current `permute/contiguous` steps exist only to feed `Linear` and `LayerNorm` in channel-last form.
 
-### H3: Distillation Will Be More Useful Than Architectural Over-Expansion
+### H3: GCN Head Loops Can Be Fused
 
-If the accelerated student loses noticeable accuracy, a teacher-guided recovery path will be more efficient than adding back heavy modules.
+The current graph-convolution branch uses explicit Python-level chunking and looping that should be replaceable by a fused batched tensor operation.
 
-**Reason this matters:** The branch objective is compute reduction, not designing a larger hybrid than the original model.
+**Reason this matters:** Removing Python control overhead and repeated small ops is especially relevant for `B=1`.
 
-### H4: FLOPs Gains Must Translate To Real Latency Gains
+### H4: Low-`V`, Low-Batch Inference Needs Its Own Benchmark Story
 
-Some theoretically cheaper variants will not speed up real inference because partition, reshape, memory movement, or kernel-launch overhead dominates.
+Operator choices that look minor in training or large-batch settings can become important under the actual target regime of `V=14` and `B=1`.
 
-**Reason this matters:** The final claim should be about usable acceleration, not only symbolic arithmetic savings.
+**Reason this matters:** Benchmark conclusions from large `V` or large batch settings may not transfer.
 
-### H5: Block Organization, Not A Single Operator, Is The Core Problem
+## Near-Term Candidate Rewrites
 
-For the pruned low-`V` inference regime, the main `SkateFormer` inefficiency is better described as a block-organization problem than as one isolated kernel bottleneck. A partition-free and branch-collapsed redesign should therefore be more paper-worthy than only tuning attention count or MLP width.
-
-**Reason this matters:** Changing `attention` count or `mlp_ratio` is useful engineering, but the more defensible research claim is that explicit multi-partition branch materialization and concat-projection fusion become structurally inefficient after pruning.
-
-## Near-Term Refinement Candidates
-
-- **Block redesign:** Replace the current explicit multi-partition branch materialization with a partition-free and branch-collapsed mixer.
-- **Fusion redesign:** Replace `cat + proj` with additive, gated, or low-rank fusion so the block no longer depends on large explicit branch concatenation.
-- **Shared projection:** Keep the `ACmix` lesson as a supporting design principle, but do not present shared projection alone as the main novelty claim.
-- **Stage-wise replacement:** Test early-only, late-only, and all-stage replacement schedules.
-- **Width refinement:** Reduce head count, branch width, or MLP expansion only after the new block is stable.
-- **Teacher recovery:** Add baseline-to-student distillation only if the accelerated block shows a promising compute gain but an avoidable accuracy drop.
-- **Structural extension:** Revisit joint-pruning combinations only after the block-level story is stable.
+- **Fusion rewrite:** Replace `cat + proj` with branch-wise projection summation.
+- **Projection rewrite:** Replace channel-last `Linear` with channel-first `1x1 Conv2d`.
+- **Normalization rewrite:** Introduce channel-first exact `LayerNorm` to reduce layout thrashing.
+- **GCN rewrite:** Fuse per-head graph operations into a larger batched operation.
+- **FFN rewrite:** Replace `Linear` FFN implementation with equivalent channel-first pointwise conv form for inference benchmarking.
 
 ## Phase Plan
 
-### Phase A0: Benchmark And Profiling Freeze
+### Phase O0: Benchmark Freeze
 
-**Goal:** Lock the canonical compute benchmark before redesigning the model.
-
-**Outputs**
-- One canonical training/evaluation path for baseline accuracy
-- One canonical latency/FLOPs benchmarking command path
-- Fixed benchmark input shape and reporting template
-- Initial module-level profiling notes for the current block
-
-**Exit Criteria**
-- Speed and accuracy numbers are reproducible under one fixed setup
-- The benchmark no longer mixes archived early-recognition language with active acceleration language
-- The most expensive block components are explicitly identified
-
-### Phase A1: Baseline Cost Audit
-
-**Goal:** Establish the baseline Pareto reference.
+**Goal:** Freeze one reproducible inference benchmark for the real target shape.
 
 **Outputs**
-- Baseline `Top-1`, latency, throughput, `GFLOPs`, parameter count
-- Stage-level or block-level profiling breakdown
-- Width/head/MLP sensitivity notes if cheap to collect
-- A paper-facing diagnosis of whether the core issue is operator cost or block organization
+- Canonical benchmark shape and device setting
+- Canonical timing script path
+- Reporting template for latency and numerical difference
 
 **Exit Criteria**
-- The baseline is measured end to end
-- The first optimization target is chosen based on profiling rather than intuition alone
+- Every operator rewrite is measured under the same target shape
+- The branch no longer mixes block-redesign evaluation with operator-speed evaluation
 
-### Phase A2: ACmix-Style Prototype
+### Phase O1: Baseline Operator Audit
 
-**Goal:** Validate a first accelerated block design.
+**Goal:** Identify where operator-level speedups are most available.
 
 **Outputs**
-- One `SkateFormer` variant with a partition-free / branch-collapsed mixed block
-- Matched benchmark table against baseline
-- Stability notes on training, memory, and implementation complexity
+- Baseline latency table for the current block and key subpaths
+- List of candidate exact rewrites
+- Numerical validation protocol
 
 **Exit Criteria**
-- The prototype shows either a promising Pareto gain or a clear failure mode worth revising
-- The redesigned block does not silently increase hidden overhead elsewhere
+- The first rewrite target is selected based on measured overhead
 
-### Phase A3: Systematic Ablation
+### Phase O2: Exact Rewrite Prototypes
 
-**Goal:** Separate where the gains really come from.
+**Goal:** Implement and test exact or near-exact operator rewrites.
 
 **Outputs**
-- Stage-wise replacement table
-- Branch-width or head-count ablation
-- Optional distillation recovery table
-- Accuracy-latency Pareto plot
+- `cat + proj` rewrite
+- `Linear -> 1x1 Conv` rewrite
+- Fused graph branch rewrite
+- Output difference tables and latency tables
 
 **Exit Criteria**
-- The best accelerated variant is identified with a clean rationale
-- The claim is no longer dependent on one arbitrary architecture tweak
+- At least one rewrite gives measurable speedup with negligible output difference
 
-### Phase A4: Robustness And Extension
+### Phase O3: Composition Study
 
-**Goal:** Check whether the best variant survives outside the first narrow setup.
+**Goal:** Combine compatible rewrites into one faster inference block implementation.
 
 **Outputs**
-- `NTU60 XView` validation
-- Optional `NTU120` or alternate joint-count validation
-- Optional pruning-plus-architecture combination study
-- Final figures, tables, and writing backbone
+- Cumulative speedup table
+- Numerical closeness table
+- Optional memory comparison
 
 **Exit Criteria**
-- The acceleration story does not depend on one device, one split, or one misleading metric
+- Combined implementation remains stable and meaningfully faster than baseline
+
+### Phase O4: Escalation Decision
+
+**Goal:** Decide whether the operator work alone is enough or whether retraining-backed structural work is still needed later.
+
+**Outputs**
+- Final operator benchmark summary
+- Decision note on whether to continue into structural redesign
+
+**Exit Criteria**
+- Clear recommendation exists for the next branch or next experimental stage
 
 ## Inner-Loop Rules
 
-- Every reported variant must include `Top-1`, latency, throughput, `GFLOPs`, and parameter count if measurable
-- Real latency is the primary decision criterion; FLOPs alone are insufficient
-- Accuracy comparisons must use the same data path and training budget unless clearly marked exploratory
-- A speedup claim is invalid if it depends on a weaker checkpoint or a changed input shape
-- If a method needs distillation to recover accuracy, that dependency must be stated explicitly
-- Archived early-recognition files must not be cited as active evidence for this branch
-
-## Outer-Loop Triggers
-
-Run an outer-loop synthesis when any of the following happens:
-
-- The baseline profile is frozen
-- A prototype block shows a repeatable latency gain
-- FLOPs and latency tell conflicting stories
-- Partial replacement beats full replacement decisively
-- `NTU60 XSub` and `XView` begin to tell different Pareto stories
+- Every rewrite must preserve input/output shape exactly.
+- Every rewrite must be tested with direct output comparison against the baseline block.
+- Latency claims must use the actual target shape first, not only large synthetic benchmarks.
+- If a rewrite changes semantics materially, it no longer counts as operator-level acceleration and must be separated from this branch.
 
 ## Immediate Next Actions
 
-1. Freeze the baseline accuracy config and the benchmark command for `SkateFormer`.
-2. Profile the current `SkateFormerBlock` under the pruned inference regime and separate operator cost from block-organization overhead.
-3. Design one skeleton-specific block that removes explicit `partition -> reverse -> cat -> proj` as the primary computation pattern.
-4. Test the redesigned block first in a partial stage replacement rather than a full-model swap.
-5. Use simple width or MLP reductions only as engineering baselines, not as the main paper claim.
-6. Only if the prototype has a promising cost reduction, add teacher-guided recovery for accuracy.
+1. Freeze the operator benchmark for `B=1, C=192, T=64, V=14`.
+2. Rewrite `cat + proj` into branch-wise projection summation and test exactness.
+3. Rewrite `Linear` paths into channel-first `1x1 Conv2d` equivalents.
+4. Fuse the graph branch head loop.
+5. Measure cumulative speedup from stacking equivalent rewrites.
 
 ## Kill Criteria And Decision Points
 
-- If the baseline benchmark is not stable, stop architecture iteration and fix measurement first.
-- If the redesigned block reduces FLOPs but not latency, narrow the claim or redesign the implementation.
-- If the accelerated block loses too much accuracy for a modest speed gain, do not force the method story.
-- If a simple width reduction beats the architectural change, prefer the simpler baseline.
-- If `NTU60` does not show a stable Pareto improvement, do not expand to `NTU120` or deployment claims prematurely.
+- If a rewrite does not improve latency under the real target shape, drop it.
+- If a rewrite breaks numerical equivalence beyond acceptable tolerance, treat it as structural, not operator-level.
+- If operator-level rewrites plateau too early, postpone further changes until a later training-backed branch.

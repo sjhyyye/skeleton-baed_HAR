@@ -1,306 +1,219 @@
-# 基于 ACmix 思路的 SkateFormer 计算加速研究计划
+# 基于算子等价改写的 SkateFormer 推理加速研究计划
 
 ## 1. 研究题目
-基于 `ACmix` 风格共享投影的 `SkateFormer` 骨架动作识别模型计算加速研究
+面向剪枝后 `SkateFormer` 的算子级推理加速研究
 
 ## 2. 当前定位
-这个分支已经明确切换研究目标，不再围绕“早期动作识别”展开，而是回到“如何让现有 `SkateFormer` 跑得更快、算得更省”的主问题。
+这个分支不再以“大幅重写 block 结构”为主线，而是明确聚焦在：
 
-当前定位不是泛泛地做轻量化，也不是直接复用旧的关节点剪枝表，而是做一条更具体的架构线：
+1. 不依赖完整重训练
+2. 尽量保持函数形式不变
+3. 通过算子等价改写直接提升推理速度
 
-1. 以 `ACmix` 的设计思想作为主参考。
-2. 先分析当前 `SkateFormerBlock` 的真实计算瓶颈，而不是先假设瓶颈。
-3. 在 skeleton 时空 token 场景下，重点重构 `partition -> reverse -> cat -> proj` 这套 block 组织方式，而不是只盯着单个算子。
-4. 用真实延迟、吞吐、`GFLOPs` 和精度共同评价，而不是只看单一指标。
+也就是说，本分支的核心问题不是“设计一个全新的 mixer block”，而是：
 
-当前更明确的论文切入点是：
+**如何把现有 `SkateFormer` 的实现改写成更适合推理的算子图。**
 
-- 不把“共享前面的重投影”本身当主创新，因为这更接近已有 ACmix 思路。
-- 把主方法收敛为 `partition-free / branch-collapsed / cat-proj-free` 的 `SkateFormer` block redesign。
-- 强调该问题在剪枝后的小关节点推理场景更明显，特别是 `B=1, V=14`。
+当前目标场景已经明确固定为：
 
-## 3. 参考论文给出的关键启发
-参考论文 `On the Integration of Self-Attention and Convolution (arXiv:2111.14556)` 的关键启发不是“注意力和卷积可以简单并排放在一起”，而是：
+- `B=1`
+- `C=192`
+- `T=64`
+- `V=14`
 
-1. 卷积和自注意力的大头计算都可以被理解为前面的 `1x1` 特征投影。
-2. 真正昂贵的往往不是后面的局部聚合本身，而是前面的高维通道映射。
-3. 因此，更合理的设计是让注意力路径和卷积路径共享前面的特征生成，再用轻量聚合分别完成不同归纳偏置。
-4. 这给当前 `SkateFormer` 一个很直接的方向：不要继续堆更多分支，而要想办法减少分支前后的重通道变换与冗余拼接。
+这是本分支的第一性约束。
+
+## 3. 当前最值得做的研究问题
+当前最值得研究的不是新的学习算法，而是以下几类算子级优化是否能在不训练的前提下立刻生效：
+
+1. `cat + proj` 是否可以改写成多个 branch-wise projection 的求和
+2. `Linear` 是否可以改写成 channel-first 的 `1x1 Conv2d`
+3. `LayerNorm + Linear` 是否可以整体改写成更少 layout 变换的实现
+4. graph branch 中按 head 切分并循环的实现是否可以 fused
+
+这条线的价值在于：
+
+- 立即可测
+- 不依赖 7 天训练
+- 可以用数值一致性直接验证正确性
 
 ## 4. 核心研究问题与假设
 
 ### 4.1 核心研究问题
-1. 当前 `SkateFormerBlock` 中，真实运行时的主要开销到底来自哪里？
-2. `ACmix` 的共享投影思想，迁移到 skeleton 的 `(T, V)` token 结构后，最适合放在哪一层？
-3. 是整网替换更有效，还是只替换部分 stage 更有效？
-4. `GFLOPs` 的下降是否真的能换来 wall-clock latency 的下降？
+1. 当前实现里，哪些地方是“数学形式没必要这样写，但实现上很慢”？
+2. 哪些 rewrite 是严格等价的？
+3. 哪些 rewrite 在 `B=1, V=14` 下最有效？
+4. 多个 rewrite 叠加后，收益能否保持？
 
 ### 4.2 工作假设
-1. `H1`：当前块中的大头成本仍然主要来自通道映射和多分支输出融合，而不只是某一个局部聚合算子。
-2. `H2`：借鉴 `ACmix` 的共享投影后，可以用更少的中间通道预算同时支撑局部卷积式建模和注意力式建模。
-3. `H3`：部分 stage 替换比整网替换更容易先拿到稳定的 Pareto 改进。
-4. `H4`：如果一个方案只降低 `GFLOPs`、却不能降低真实延迟，那它不能作为主结果。
-5. `H5`：对剪枝后的小 `V` 推理场景，真正值得写论文的不是单独优化某个算子，而是取消显式 partition、多分支展开和 `cat + proj` 融合这一整套 block 模式。
+1. `H1`：`cat + proj` 可以做严格等价改写，并去掉显式 `cat`。
+2. `H2`：大量 channel-last `Linear` 可以改写为 channel-first `1x1 Conv2d`。
+3. `H3`：graph branch 的循环实现可以合并为更大的 batched tensor op。
+4. `H4`：operator-level rewrite 的收益在 `B=1, V=14` 场景下比大 batch 训练场景更明显。
 
-## 5. 研究范围与协议冻结
+## 5. 研究范围与 benchmark 冻结
 
-### 5.1 数据集与任务范围
-当前阶段先锁定如下范围：
+### 5.1 范围
+当前阶段只做：
 
-- 主数据集：`NTU60`
-- 首轮协议：`XSub`
-- 第二验证协议：`XView`
-- 任务定义：标准 full-sequence skeleton action recognition
-- 暂缓内容：`NTU120`、量化、设备特化部署
+- 推理 benchmark
+- 数值一致性验证
+- 算子级改写
 
-### 5.2 计算 benchmark 约定
-首轮必须冻结两条路径：
+当前阶段不做：
 
-1. 精度路径  
-   使用当前 `SkateFormer` 的标准训练/测试配置做 `Top-1` 对比。
+- 依赖重训练的新 block
+- 大规模精度实验
+- 结构级重新设计主结论
 
-2. 速度路径  
-   使用 `SkateFormer/tools/benchmark_inference.py` 做统一 latency / throughput / `GFLOPs` 报告。
+### 5.2 benchmark 约定
+固定以下条件作为第一 benchmark：
 
-默认输入约定先固定为：
+- 输入形状：`B=1, C=192, T=64, V=14`
+- 设备：当前 GPU
+- 指标：
+  - latency
+  - throughput
+  - 参数量
+  - 数值误差
 
-- `T = 64`
-- `V = 25`
-- `M = 2`
-- 至少报告 `batch_size = 1` 与一个较大 batch 的速度结果
+数值误差至少报告：
 
-### 5.3 当前阶段必须避免的漂移
-当前阶段不是先大改模型，而是先避免以下混乱：
-
-- 用不同 checkpoint 比较速度
-- 用不同输入尺寸比较 `GFLOPs`
-- 用不同 batch size 选择性展示结果
-- 把旧的 early-recognition 指标混入新的加速主线
+- `max_abs_diff`
+- `mean_abs_diff`
 
 ## 6. 方法设计
 
-### 6.1 对当前 `SkateFormerBlock` 的代码级理解
-现有块并不是“纯注意力块”。它已经包含：
+### 6.1 `cat + proj` 改写
+原始形式是：
 
-- 一次 `mapping`
-- 一条 graph-conv 路径
-- 一条 temporal-conv 路径
-- 四条 partitioned attention 路径
-- 一次 `proj`
-- 一次 `MLP`
+`output = W [y1; y2; ...; yk] + b`
 
-所以新工作的重点不是再加一个“混合块”概念，而是：
+这可以严格改写为：
 
-1. 找出哪些通道变换和分支拼接最贵。
-2. 判断哪些分支值得保留、哪些分支可以合并或缩窄。
-3. 用共享中间表示取代过宽的 branch-specific 预算。
+`output = W1 y1 + W2 y2 + ... + Wk yk + b`
 
-### 6.2 ACmix 风格共享投影块
-首轮新块设计建议遵循以下原则：
+因此首要任务是：
 
-1. 只做一次主特征生成，尽量避免为不同分支重复构造高维中间特征。
-2. 在共享特征之上，分出两类轻量聚合：
-   - 卷积式或局部图时序聚合
-   - 注意力式或动态加权聚合
-3. 输出阶段尽量避免“大拼接 + 大投影”的重融合方式。
-4. 若可能，用可学习混合权重代替部分固定宽度分配。
+- 去掉显式 `cat`
+- 把大投影拆成每个 branch 的独立投影再求和
 
-但当前版本更推荐把这套思想落成一个更明确的 block redesign，而不是停留在“共享投影”四个字：
+这样做的优点：
 
-- **partition-free**：不再显式 `view / permute / reverse` 去构造四种 partition token。
-- **branch-collapsed**：不再保留 `gconv + tconv + 4 attention` 这种 6 路展开形式，而是压成更少的必要分支。
-- **cat-proj-free**：不再默认采用所有分支完整输出后再 `cat + proj` 的融合方式。
+- 数学上等价
+- 不需要训练
+- 直接命中推理热路径
 
-换句话说，真正要改的是 block 的内部拓扑，而不是只加一个新算子。
+### 6.2 `Linear -> 1x1 Conv2d`
+对于按位置独立做通道混合的 `Linear`，可改写为：
 
-### 6.3 分阶段替换策略
-不建议一开始整网替换，优先按以下顺序验证：
+- channel-first 下的 `1x1 Conv2d`
 
-1. 只替换第一阶段
-2. 只替换中后阶段
-3. 替换所有 stage
+这一步的重点不是参数变少，而是：
 
-这样更容易回答“收益来自哪里”，也更容易定位失败原因。
+- 减少 `permute`
+- 减少 `contiguous`
+- 保持 `[B, C, T, V]` 数据流更稳定
 
-### 6.4 当前最值得写进论文的 block-level redesign
-当前版本建议把方法草图收敛为下面这类结构：
+### 6.3 graph branch fuse
+当前 graph 分支的一个问题是：
 
-`input -> shared pre-mix -> local mixer -> relation mixer -> lightweight fusion -> residual -> slim FFN`
+- 先 chunk
+- 再按 head 循环
+- 再 `einsum`
+- 再 `cat`
 
-它和原始 `SkateFormerBlock` 的关键区别不是某个层更快，而是：
+这更像实现问题，不是模型本身的问题。  
+因此这里应尝试：
 
-1. 去掉显式 `partition -> attention -> reverse`
-2. 去掉 6 路完整 branch materialization
-3. 去掉 `cat(y) -> proj`
-4. 用少分支、轻融合替代“先展开、后重融合”
+- 更大的 batched `einsum`
+- 更少的 Python 循环
 
-这样写出来的方法更像一个新的 skeleton mixer，而不是若干小优化拼在一起。
+### 6.4 组合策略
+不是一开始就把所有 rewrite 一起上，而是：
 
-### 6.5 训练期精度恢复
-如果新块出现“速度有提升，但精度掉得偏多”的情况，优先考虑：
+1. 单独验证 `cat + proj`
+2. 单独验证 `Linear -> 1x1 Conv`
+3. 单独验证 graph fuse
+4. 再做 cumulative benchmark
 
-- 以原始 `SkateFormer` 作为 teacher 的蒸馏
-- 轻量的 logits KD
-- 中间特征对齐
+## 7. 验证策略
 
-但要明确：蒸馏是精度恢复手段，不是本分支的主创新点。
+### 7.1 正确性验证
+每个 rewrite 都必须做：
 
-### 6.6 与结构剪枝的关系
-旧仓库里已经有一批 joint pruning 结果。这些结果当前只作为后续组合实验的候选，不是第一阶段的主线。
+1. 权重映射
+2. 随机输入 forward
+3. 输出差异统计
 
-更合理的顺序是：
+只有在误差足够小的情况下，才能算“等价 rewrite”。
 
-1. 先把架构级共享投影故事做清楚。
-2. 再测试“新块 + 剪枝”是否进一步改善 Pareto。
+### 7.2 性能验证
+每个 rewrite 都必须在同一 benchmark 下测：
 
-不过当前论文动机已经进一步收敛为：剪枝后的小 `V` 场景放大了原始 block 组织方式的问题，因此 block redesign 和剪枝是强相关的，不再是完全割裂的两条线。
+- rewrite 前 latency
+- rewrite 后 latency
+- speedup
 
-## 7. 损失函数与训练策略
+### 7.3 组合验证
+最后再报告：
 
-### 7.1 首轮损失
-首轮优先保持训练目标简单：
-
-`L = L_cls`
-
-如果需要做精度恢复，再扩展为：
-
-`L = L_cls + lambda_kd * L_kd`
-
-其中：
-
-- `L_cls`：动作分类损失
-- `L_kd`：teacher-student 蒸馏损失
-
-### 7.2 训练流程
-建议分三步：
-
-1. 跑通原始 `SkateFormer` baseline  
-   得到新的精度和速度统一参考表。
-
-2. 训练单个 `ACmix` 风格原型  
-   先只做部分 stage 替换。
-
-3. 在确认有真实加速趋势后  
-   再做整网替换、蒸馏恢复或与剪枝结合。
+- 单项收益
+- 累积收益
+- 是否存在互相抵消
 
 ## 8. 基线、对比与消融
 
 ### 8.1 必须保留的基线
-- 原始 `SkateFormer`
-- 简单宽度缩减版本
-- 简单 head 数缩减版本
-- 历史 joint pruning 候选中的代表方案
+- 原始 block 实现
 
 ### 8.2 核心对比组
-- `SkateFormer + redesign block@stage1`
-- `SkateFormer + redesign block@late_stages`
-- `SkateFormer + redesign block@all_stages`
-- `SkateFormer + redesign block + KD`
-- `SkateFormer + redesign block + pruning`（后续）
+- baseline
+- baseline + `cat + proj` rewrite
+- baseline + `Linear -> 1x1 Conv`
+- baseline + graph fuse
+- baseline + all safe rewrites
 
 ### 8.3 消融重点
-重点分析以下因素：
+- 单项 rewrite 是否独立有效
+- 哪一项贡献最大
+- 多项 rewrite 是否可叠加
+- 数值误差是否可接受
 
-- 是否显式 partition
-- 分支是否从 6 路压缩到 2 路或 3 路
-- 是否保留 `cat + proj`
-- 共享投影宽度
-- 卷积式分支与关系建模分支的预算分配
-- stage-wise replacement 的差异
-- `GFLOPs` 和 latency 是否一致
-- 是否需要 KD 才能维持精度
+## 9. 当前阶段的可执行任务
 
-## 9. 评价指标与分析维度
+### 9.1 第一优先级
+1. 固定 benchmark 命令
+2. 重测当前 baseline
+3. 完成 `cat + proj` 等价改写
 
-### 9.1 主要指标
-- `Top-1 Accuracy`
-- latency (`ms/iter`)
-- throughput (`samples/s`)
-- `GFLOPs`
-- 参数量
+### 9.2 第二优先级
+1. 完成 `Linear -> 1x1 Conv2d`
+2. 完成 graph branch fuse
+3. 做单项 benchmark
 
-### 9.2 辅助分析
-- 不同 stage 替换位置的收益差异
-- 小 batch 与大 batch 下的速度差异
-- 理论复杂度下降与真实延迟下降的偏差
-- 不同关节点数量下的收益是否一致
+### 9.3 第三优先级
+1. 做 cumulative benchmark
+2. 总结哪些 rewrite 值得保留
+3. 决定后续是否还需要训练型结构改动
 
-## 10. 当前阶段的可执行任务
+## 10. 预期贡献的收敛表述
+当前分支更稳妥的贡献应该写成：
 
-### 10.1 第一优先级
-1. 固定 benchmark 命令  
-   明确精度路径与速度路径各自的 canonical 命令。
+1. 面向剪枝后小 `V` 的 `SkateFormer` 推理场景，系统分析现有实现中的算子级低效模式。
+2. 提出若干不依赖重训练的等价改写方法。
+3. 用真实 latency 和数值一致性共同验证 operator-level acceleration 的有效性。
 
-2. 跑出新的原始 baseline  
-   统一记录 `Top-1`、latency、throughput、`GFLOPs`、参数量。
+## 11. 风险与应对
 
-3. 做块级 profile  
-   判断“单个算子慢”还是“block 组织方式不合理”才是主要矛盾。
+### 风险 1：理论等价但实际不更快
+应对方式：直接删掉，不保留无效 rewrite。
 
-### 10.2 第二优先级
-1. 实现第一版 partition-free / branch-collapsed block
-2. 先做部分 stage 替换
-3. 记录第一轮 Pareto 变化
-4. 若速度提升明显但精度下降，加入 KD 恢复
+### 风险 2：改写后误差过大
+应对方式：将其归类为结构改动，而不是本分支的算子等价改写。
 
-### 10.3 第三优先级
-1. 扩展到 `XView`
-2. 结合旧 pruning 方案
-3. 补充 Pareto 图、模块结构图和失败案例
+### 风险 3：单项收益成立，但叠加后无明显增益
+应对方式：同时报告单项收益和组合收益，不强行讲故事。
 
-## 11. 预期创新点的收敛表述
-当前版本更稳妥的创新点应该收敛为以下三条：
-
-1. 针对剪枝后小关节点数的 skeleton 时空 token，指出原始 `SkateFormer` 的显式 partition、多分支展开和 `cat + proj` 融合在推理时存在结构性低效。
-2. 提出一种 `partition-free / branch-collapsed / cat-proj-free` 的 skeleton mixer block，在保持必要关系建模能力的同时改写 block 内部拓扑。
-3. 系统比较“部分替换”和“整网替换”的 accuracy-cost Pareto，并强调 wall-clock latency 与 `GFLOPs` 的一致性验证。
-
-## 12. 可能风险与应对
-
-### 风险 1：理论上更省，但实际不更快
-应对方式：把 wall-clock latency 作为主指标之一，不能只报 `GFLOPs`。
-
-### 风险 2：新块速度变快但精度下降过多
-应对方式：优先尝试 KD 恢复，再决定是否保留该路线。
-
-### 风险 3：简单缩宽/减头就能达到相同收益
-应对方式：必须保留简单 baseline，不能拿复杂改动和弱 baseline 比。
-
-### 风险 4：整网替换过早导致结论混乱
-应对方式：先做 stage-wise replacement，分清收益来源。
-
-### 风险 5：旧 pruning 结果干扰主线
-应对方式：先把它们明确降级为“后续组合实验候选”，不与第一阶段架构结果混合叙述。
-
-### 风险 6：只优化了 10% 左右的局部开销，整体收益不足以支撑论文
-应对方式：不要把目标写成“优化 partition/reverse/cat”本身，而要把它提升为 block-level redesign，争取同时带动 attention/fusion 结构一起变化。
-
-## 13. 当前版本的阶段安排
-
-### 阶段 A0：benchmark 冻结
-- 锁定 `NTU60 XSub`
-- 锁定速度脚本与输入约定
-- 锁定结果汇报模板
-
-### 阶段 A1：baseline 建立
-- 重测原始 `SkateFormer`
-- 输出第一版精度-速度基线表
-- 完成块级 profile
-
-### 阶段 A2：原型验证
-- 实现第一版 partition-free / branch-collapsed block
-- 先做局部 stage 替换
-- 输出第一版 Pareto 对比
-
-### 阶段 A3：系统消融
-- 比较不同替换范围
-- 比较不同通道预算
-- 比较是否需要 KD
-
-### 阶段 A4：扩展与写作
-- 扩展到 `XView`
-- 视情况叠加 pruning
-- 固化图表与实验结论
-
-## 14. 一句话总结当前计划
-当前这条研究线已经被明确重置为“以 `ACmix` 作为启发，但把真正的论文方法收敛为 `partition-free / branch-collapsed / cat-proj-free` 的 `SkateFormer` block redesign；先冻结 benchmark，再做块级 profile，再做部分 stage 替换验证，最后用真实 Pareto 结果决定是否继续扩展”的加速计算计划。
+## 12. 一句话总结当前计划
+当前分支的研究计划已经明确收敛为：围绕 `B=1, C=192, T=64, V=14` 的剪枝后 `SkateFormer` 推理场景，优先研究不依赖重训练的算子等价改写，用数值一致性和真实 latency 直接验证加速效果。
