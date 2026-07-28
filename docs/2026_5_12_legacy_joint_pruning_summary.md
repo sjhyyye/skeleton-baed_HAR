@@ -61,7 +61,7 @@
 
 ## 相关文件位置
 
-- 原始整理表： [legacy_engineering_optimization.md](/data00/home/sjh/skeleton-based-har/experiments/legacy_engineering_optimization.md:1)
-- Pareto 图脚本： [plot_legacy_pruning_pareto.py](/data00/home/sjh/skeleton-based-har/src/plot_legacy_pruning_pareto.py:1)
-- Pareto 图 PNG： [legacy_joint_pruning_pareto.png](/data00/home/sjh/skeleton-based-har/paper/figures/legacy_joint_pruning_pareto.png)
-- Pareto 图 PDF： [legacy_joint_pruning_pareto.pdf](/data00/home/sjh/skeleton-based-har/paper/figures/legacy_joint_pruning_pareto.pdf)
+- 原始整理表： [acceleration_baseline_note.md](/data00/home/sjh/programs/skeleton-baed_HAR/experiments/acceleration_baseline_note.md:1)
+- Pareto 图脚本： [plot_legacy_pruning_pareto.py](/data00/home/sjh/programs/skeleton-baed_HAR/src/plot_legacy_pruning_pareto.py:1)
+- Pareto 图 PNG： [legacy_joint_pruning_pareto.png](/data00/home/sjh/programs/skeleton-baed_HAR/paper/figures/legacy_joint_pruning_pareto.png)
+- Pareto 图 PDF： [legacy_joint_pruning_pareto.pdf](/data00/home/sjh/programs/skeleton-baed_HAR/paper/figures/legacy_joint_pruning_pareto.pdf)

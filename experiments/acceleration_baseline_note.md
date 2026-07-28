@@ -1,32 +1,33 @@
-# Legacy Engineering Optimization Note
+# Acceleration Baseline Note
 
-This note preserves the older engineering-oriented line as historical context only.
+This note is now the baseline context document for the active acceleration branch.
 
-## What It Was
+## What It Covers
 
-Before the project pivoted to early skeleton action recognition, the main question was how far a `SkateFormer`-style recognizer could be simplified and accelerated for a rehabilitation or deployment-oriented setting.
+The branch has returned to the question of how far a `SkateFormer`-style recognizer can be simplified and accelerated while retaining usable recognition accuracy.
 
-That older line emphasized:
+The acceleration line currently emphasizes:
 
 - joint pruning
-- compression
+- architecture simplification
 - inference benchmarking
-- eventual deployment considerations
+- accuracy-cost Pareto tracking
 
-## What Remains Useful
+## What Is Immediately Useful
 
-- It provides some implementation context for why parts of the repository mention reduced joint sets or benchmarking scripts.
-- It may still be useful later if the project returns to an engineering or deployment subsection.
+- It explains why the repository already contains reduced-joint notes and benchmarking scripts.
+- It preserves comparable historical pruning numbers that can seed the new branch.
+- It gives a concrete baseline table that can later be rerun under the newly frozen benchmark.
 
-## What It Does Not Control Now
+## What It Does Not Yet Provide
 
-- It does not define the main benchmark.
-- It does not define the paper contribution.
-- It does not define the current success criteria.
+- It is not yet a fresh baseline table for the current branch.
+- It does not replace the need for matched latency re-measurement.
+- It does not by itself justify the new `ACmix`-inspired architecture work.
 
 ## Working Rule
 
-Treat the engineering optimization thread as a small side record unless the project explicitly pivots back.
+Treat the table below as historical acceleration evidence that informs the new branch, not as the finished benchmark for the new branch.
 
 ## Historical Joint-Pruning Table
 

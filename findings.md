@@ -2,55 +2,54 @@
 
 ## Research Question
 
-Can a skeleton-based action-recognition model classify actions reliably from partial motion prefixes, especially at low observation ratios, without using frame-level stage labels or heavy sub-action parsing?
+Can `SkateFormer` be accelerated in a way that improves the accuracy-latency-FLOPs Pareto frontier, rather than only lowering symbolic complexity on paper?
 
 ## Current Understanding
 
-The project has now pivoted fully to early skeleton action recognition. The older acceleration and deployment agenda is no longer the main organizing problem. It remains historical context only and should not drive current benchmark choice, evaluation criteria, or method design.
+The branch has pivoted back to acceleration as the main organizing problem. The earlier early-recognition plan is now archived for this branch and should not drive benchmark choice, evaluation criteria, or method design.
 
-The central challenge is no longer latency under deployment constraints. It is ambiguity under partial observation. In the early stage of an action, the model often lacks enough evidence to discriminate fine-grained labels confidently. This makes two directions especially relevant:
+The important local code observation is that the current `SkateFormerBlock` is already a hybrid block. It has one shared `mapping`, then splits computation into graph convolution, temporal convolution, and four partitioned attention branches, followed by `proj` and an `MLP`. That means the new branch should not assume a naive "pure conv plus pure attention" baseline. The real question is which parts of this existing hybrid are still unnecessarily expensive and whether an `ACmix`-style redesign can simplify them.
 
-- coarse semantic supervision that may emerge earlier than full class identity
-- training-time guidance from the full sequence to stabilize prefix predictions
+This makes the acceleration plan more concrete:
 
-The current project is therefore best framed as a lightweight early-recognition study built around a `SkateFormer` backbone, coarse intent auxiliary supervision, and full-prefix consistency learning.
+- freeze one benchmark path first
+- profile the current block rather than guessing
+- redesign the block organization rather than only one operator
+- verify real latency, not only FLOPs
+
+The current paper-facing direction is now narrower than a generic ACmix adaptation. For the pruned low-`V` regime, the more defensible claim is that `SkateFormer` becomes structurally inefficient because it explicitly materializes multiple partition branches and then fuses them with `cat + proj`. This suggests a partition-free, branch-collapsed, and cat-proj-free redesign as the core method story.
 
 ## Current Status
 
-- The early-recognition direction is now the primary project line.
-- The new central benchmark is `NTU60` under an early-recognition protocol.
-- `XSub` is the first split to lock; `XView` is the next validation split.
-- `NTU120` is postponed until the `NTU60` story is stable.
-- The `H1` baseline family is now substantially complete on `NTU60 XSub`.
-- The current phase remains single-module ablation, but the intent line is now materially clarified.
+- The active direction is now `SkateFormer` acceleration, not early recognition.
+- The new central benchmark is standard full-sequence `NTU60`, with `XSub` first and `XView` second.
+- The first phase is benchmark freeze and cost profiling, not model ablation.
+- The earlier early-recognition experiment folders remain archived only.
 
 ## What Is Already Clear
 
-- The project now has a fixed prefix-construction path and a usable early-recognition baseline family on `NTU60 XSub`.
-- `prefix_multi` is stronger than matched single-ratio training at both `0.1` and `0.3`.
-- The largest baseline gain appears in the hardest early regime: `31.88%` vs `27.66%` Top-1 at `r=0.1`, and `68.92%` vs `67.04%` at `r=0.3`.
-- The prefix-based multi-ratio path preserves near-full-observation performance: `91.42%` at `1.0` versus the clean full upper bound `91.73%`.
-- Fixed `intent-only` has now been evaluated under both semantic and trajectory coarse mappings.
-- The trajectory mapping is the better intent implementation, but it still does not beat `prefix_multi` at `0.1` or `0.3`.
-- A minimal `intent-improved` variant with ratio-adaptive intent weights and intent-to-action bias/gating reaches `31.30% / 68.48% / 85.53%` at `0.1 / 0.3 / 0.5`. This is a small gain over fixed trajectory intent-only at `0.3 / 0.5`, but it still misses `prefix_multi` at the decisive low ratios.
-- Full-sequence guidance must be compared against a simpler `KD-only` or equivalent teacher baseline.
-- The main claim should target low observation ratios first, especially `0.1` and `0.3`.
+- The repository already contains a usable inference benchmark entry point in `SkateFormer/tools/benchmark_inference.py`.
+- The current block structure suggests that `mapping`, multi-branch aggregation, `proj`, and `MLP` are the first places to audit.
+- The repository also contains older pruning evidence, which is useful as acceleration context but should not be treated as the current baseline table.
+- An architecture claim will only be credible if it beats simple baselines such as width reduction, head reduction, or old pruning settings.
+- For the paper narrative, operator-level speedups are weaker than a redesign that removes explicit partition-reverse and concat-projection structure.
 
 ## Open Questions
 
-- Which coarse-intent grouping is stable enough to support a paper claim?
-- Does consistency learning add value beyond straightforward teacher guidance?
-- Are the gains concentrated in specific action families such as interaction or object manipulation?
-- Does the story hold on `XView` after it is established on `XSub`?
+- Which part of the current block actually dominates wall-clock runtime under the canonical benchmark?
+- How closely should the `ACmix` idea be adapted versus rewritten for temporal-joint skeleton tokens?
+- Does partial stage replacement outperform a full-model swap?
+- Will FLOPs reductions survive contact with real latency measurement?
+- Can the `partition -> reverse -> cat -> proj` pattern be replaced by a cleaner skeletal mixer without losing the useful inductive bias?
 
 ## Optimization Trajectory
 
 The project should now move in a strict order:
 
-1. Keep the completed `H1` baseline family fixed as the reference (`r=0.1`, `r=0.3`, and `prefix_multi`).
-2. Treat the semantic row, the trajectory row, and the adaptive-gated row as the complete current intent reference set rather than continuing to tweak intent first.
-3. Test `KD-only` and then `consistency-only` under the same locked protocol.
-4. Train the joint model only after the simpler teacher-guided comparisons are understood.
-5. Move to `XView` only after the `NTU60 XSub` gain sources are separated cleanly.
+1. Freeze one baseline benchmark for both accuracy and speed.
+2. Measure the unmodified `SkateFormer` cleanly under that benchmark.
+3. Profile the current block and decide whether block organization, not a single operator, is the main paper-worthy problem.
+4. Implement one partition-free and branch-collapsed prototype block and test it in a limited stage replacement.
+5. Only after a real cost gain appears, decide whether distillation, pruning, or further simplification is worth adding.
 
-This trajectory is intentionally conservative. The current bottleneck is not idea generation; it is experimental discipline.
+This trajectory is intentionally conservative. The current bottleneck is not paper inspiration; it is matched measurement and disciplined architecture iteration.

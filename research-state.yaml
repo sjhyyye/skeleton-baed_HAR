@@ -1,105 +1,106 @@
 # Research State — Central Project Tracking
 
 project:
-  title: "Early Skeleton Action Recognition with Coarse Intent Supervision and Long-Short Sequence Consistency"
-  question: "How can a skeleton-based action-recognition model make reliable early predictions from partial prefixes, especially at low observation ratios, without frame-level stage annotation or heavy sub-action modeling?"
+  title: "ACmix-Inspired Compute Acceleration for SkateFormer-Based Skeleton Action Recognition"
+  question: "How can SkateFormer be redesigned to reduce real inference cost while preserving strong full-sequence recognition accuracy on standard skeleton benchmarks?"
   status: active
-  started: "2026-05-06"
-  domain: "computer vision, skeleton-based action recognition, early action recognition"
+  started: "2026-07-27"
+  domain: "computer vision, skeleton-based action recognition, model acceleration"
 
 literature:
-  key_papers: []
+  key_papers:
+    - "Pan et al., On the Integration of Self-Attention and Convolution (CVPR 2022, arXiv:2111.14556)"
+    - "SkateFormer: Skeletal-Temporal Transformer for Human Action Recognition"
   open_problems:
-    - "Whether coarse intent labels provide real low-ratio gains or only act as generic auxiliary supervision."
-    - "Whether full-prefix consistency provides unique value beyond straightforward KD-only baselines."
-    - "How much value remains in manual coarse-intent grouping once semantic, trajectory, and early-observable taxonomies all fail to beat `prefix_multi` at `0.1 / 0.3`."
+    - "Which part of the current SkateFormer block dominates real latency under the repository's benchmark path."
+    - "How far ACmix-style shared projection can be adapted to skeleton temporal-joint tokens without hurting accuracy."
+    - "Whether stage-wise replacement yields a better Pareto frontier than an all-stage rewrite."
+    - "Whether FLOPs savings will translate to real latency savings once partition and memory-movement overhead is included."
+    - "Whether the stronger paper direction is a block-level redesign that removes explicit partition and concat-projection structure, rather than a narrow operator optimization."
   evidence_gaps:
-    - "No clean KD-only baseline has yet been logged under the locked NTU60 early protocol."
-    - "No consistency-only run has yet separated full-to-prefix guidance from plain distillation."
-    - "The adaptive gated intent-improved line has only been checked at `0.1 / 0.3 / 0.5`; the fixed-taxonomy comparison is now saturated through `early_observable_v2`, but the mechanism-improved row is still partial."
-    - "No XView validation has yet checked whether the XSub baseline story transfers."
+    - "No fresh baseline latency table has been logged under the new branch definition."
+    - "No module-level profile has yet separated `mapping`, `proj`, `mlp`, and partitioned attention overhead."
+    - "No ACmix-style skeleton block has yet been implemented or benchmarked in this branch."
+    - "No matched XView validation exists for the new acceleration line."
 
 hypotheses:
   - id: H0
-    statement: "If the early-recognition protocol is frozen before major experiments, later comparisons will remain fair and interpretable."
-    status: supported
-    motivation: "Prefix cropping, valid-frame counting, interpolation, and ratio scheduling can easily drift and invalidate comparisons."
+    statement: "If the accuracy path and inference benchmark are frozen before architecture changes, later acceleration claims will remain fair and interpretable."
+    status: active
+    motivation: "Batch size, device, input shape, warmup, and checkpoint quality can easily drift and invalidate speed comparisons."
     parent: null
     priority: high
   - id: H1
-    statement: "Coarse intent labels provide more stable supervision than fine action labels in the low-observation regime and can improve early skeleton recognition."
-    status: challenged
-    motivation: "Many classes remain ambiguous early but are already separable at a coarser semantic level."
+    statement: "An ACmix-style shared-projection redesign can reduce compute while preserving competitive SkateFormer accuracy."
+    status: active
+    motivation: "The current block already mixes several aggregation paths, so the main opportunity is to reduce how much expensive channel mixing is done around them."
     parent: null
     priority: high
   - id: H2
-    statement: "A full-sequence branch used as a training-time consistency target can stabilize prefix predictions and improve low-ratio performance."
+    statement: "Partial stage replacement will outperform full-model replacement on the first acceleration Pareto frontier."
     status: active
-    motivation: "Partial prefixes underdetermine the final class, so full-sequence guidance may regularize the prediction boundary."
+    motivation: "Different stages likely have different sensitivity to long-range modeling and local aggregation."
     parent: null
     priority: high
   - id: H3
-    statement: "The combined intent-plus-consistency model will matter most at 0.1 and 0.3 observation ratios."
+    statement: "Teacher-guided recovery will be a cheaper accuracy-repair path than reintroducing heavy modules."
     status: active
-    motivation: "The method is only meaningful if it solves the genuinely early regime rather than near-complete observation."
+    motivation: "The branch objective is acceleration, so accuracy repair should stay lightweight."
     parent: null
     priority: medium
   - id: H4
-    statement: "The main claim will remain valid under multiple coarse-intent grouping schemes."
+    statement: "A useful acceleration claim must survive both FLOPs accounting and wall-clock latency measurement."
     status: active
-    motivation: "Manual taxonomy design must not become the hidden source of the result."
+    motivation: "Implementation overhead can erase theoretical savings."
     parent: null
     priority: medium
+  - id: H5
+    statement: "For pruned low-V inference, a partition-free and branch-collapsed block redesign is more defensible as the main research contribution than isolated operator tuning."
+    status: active
+    motivation: "The paper-worthy problem is likely the block organization itself: explicit partition, branch materialization, and concat-projection fusion."
+    parent: null
+    priority: high
 
 experiments:
-  proxy_metric: "Per-ratio Top-1 action accuracy under a fixed early-recognition protocol on NTU60."
-  baseline_value:
-    prefix_single_r01_top1: 27.66
-    prefix_single_r03_top1: 67.04
-  best_value:
-    prefix_multi_r01_top1: 31.88
-    prefix_multi_r03_top1: 68.92
-    prefix_multi_mean_top1: 76.56
-    full_upper_bound_top1: 91.73
-  total_runs: 8
+  proxy_metric: "Accuracy-latency-FLOPs Pareto frontier under a fixed full-sequence NTU60 benchmark."
+  baseline_value: {}
+  best_value: {}
+  total_runs: 0
   trajectory:
-    - "SkateFormer-full (`1.0 -> 1.0`) reached 91.73% Top-1 on NTU60 XSub."
-    - "Single-ratio prefix baseline at `r=0.3` reached 67.04% Top-1."
-    - "Single-ratio prefix rerun at `r=0.1` reached 27.66% Top-1."
-    - "Multi-ratio prefix baseline reached 31.88% / 68.92% / 85.52% / 90.17% / 91.44% / 91.42% Top-1 over `0.1 / 0.3 / 0.5 / 0.7 / 0.9 / 1.0`."
-    - "Intent-only under `semantic_coarse_v1` reached 31.69% / 67.95% / 85.35% / 90.08% / 91.11% / 91.41% Top-1 and did not beat `prefix_multi` at any tested ratio."
-    - "Intent-only under `trajectory_coarse_v1` reached 31.32% / 68.37% / 85.42% / 90.08% / 91.25% / 91.54% Top-1, modestly improving over the semantic mapping but still trailing `prefix_multi` at `0.1 / 0.3`."
-    - "Intent-only under `early_observable_v2` reached 31.53% / 68.33% / 85.46% / 90.27% / 91.39% / 91.55% Top-1; it is the best fixed intent taxonomy tried so far on average, but still does not beat `prefix_multi` at `0.1 / 0.3`."
-    - "Intent-improved with trajectory mapping, ratio-adaptive intent weights, and intent-to-action bias/gating reached 31.30% / 68.48% / 85.53% Top-1 at `0.1 / 0.3 / 0.5`; it gave small mid-ratio gains over fixed trajectory intent-only but still did not beat `prefix_multi` at `0.1 / 0.3`."
+    - "Branch pivoted on 2026-07-27; early-recognition results are archived and no longer define the active baseline."
+    - "The first required output is a fresh baseline table for unmodified SkateFormer under the new benchmark definition."
+    - "The paper direction has now been narrowed from generic ACmix inspiration to a partition-free / branch-collapsed / cat-proj-free block redesign for pruned low-V inference."
 
 outer_loop:
-  cycle: 1
-  last_direction: "stress_test_intent_then_shift_to_teacher_guidance"
-  last_reflection: "The intent line is now saturated enough to stop taxonomy-first iteration. Semantic intent-only was weakest, trajectory intent-only was directionally better, and `early_observable_v2` is now the best fixed taxonomy on average, but all fixed intent rows still miss `prefix_multi` at `0.1 / 0.3`. The adaptive gated refinement only adds small mid-ratio gains and remains partial. The next priority is therefore clearly KD-only and consistency-only."
+  cycle: 0
+  last_direction: "reset_to_acceleration_benchmark_freeze"
+  last_reflection: "The branch has intentionally cleared the previous early-recognition narrative. The next priority is still to freeze one clean acceleration benchmark and profile the current SkateFormer block, but the method story is now more specific: use ACmix only as inspiration and target a partition-free / branch-collapsed / cat-proj-free redesign for the pruned low-V regime."
 
 plan:
   primary_benchmark:
-    name: "NTU60 early skeleton action recognition"
-    status: locked_for_current_phase
-    note: "Use XSub first, then XView. NTU120 is deferred until the NTU60 story is stable."
+    name: "NTU60 full-sequence skeleton action recognition with matched compute benchmarking"
+    status: active_freeze
+    note: "Use XSub first, then XView. The benchmark must always report both recognition quality and compute cost."
   secondary_benchmark:
-    name: "NTU120 early extension"
+    name: "NTU120 or reduced-joint extension"
     status: deferred
-    note: "This is a later robustness study, not part of the current baseline-lock phase."
-  current_phase: "H2_single-module-ablation"
+    note: "This is a later robustness study, not part of the current baseline-freeze phase."
+  current_phase: "A0_compute-baseline-freeze"
   plan_document: "research-plan.md"
+  detailed_plan_document: "acceleration_research_plan.md"
   milestones:
-    - "Freeze prefix construction and observation-ratio protocol. (done)"
-    - "Build the SkateFormer-prefix baseline. (done on XSub for `r=0.1`, `r=0.3`, and multi-ratio)"
-    - "Validate intent-only, consistency-only, and KD-only separately. (intent-only complete; KD-only and consistency-only pending)"
-    - "Train and evaluate the full joint model."
-    - "Stress-test the claim under multiple intent mappings and XView."
+    - "Freeze the canonical accuracy and inference benchmark paths."
+    - "Build a fresh baseline table for unmodified SkateFormer."
+    - "Profile the current block and decide whether the main issue is operator cost or block organization."
+    - "Implement and benchmark a partition-free / branch-collapsed redesign prototype."
+    - "Separate stage-wise replacement, width reduction, and optional distillation effects."
+    - "Validate the best variant on XView before making a broader claim."
   next_actions:
-    - "Implement and run KD-only under the locked NTU60 XSub early-recognition protocol."
-    - "Run consistency-only and keep the naming honest if it reduces to ordinary KD."
-    - "Use the completed semantic, trajectory, `early_observable_v2`, and adaptive-gated intent rows as the intent reference set."
-    - "Only if teacher-guided baselines show value, continue to uncertainty-aware consistency rather than another intent-taxonomy tweak."
-    - "Defer XView and NTU120 until the simpler H2 gain sources are separated cleanly."
+    - "Write down the canonical baseline benchmark command using `SkateFormer/tools/benchmark_inference.py`."
+    - "Measure the baseline model under fixed input and device settings."
+    - "Inspect whether the paper-worthy issue is explicit partition / branch materialization / concat-projection rather than one isolated operator."
+    - "Prototype a skeleton-specific partition-free and branch-collapsed block before broader architecture churn."
+    - "Treat archived early-recognition files as history only, not as active evidence."
 
 workspace:
   findings: "findings.md"

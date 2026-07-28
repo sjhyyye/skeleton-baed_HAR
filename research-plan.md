@@ -2,193 +2,200 @@
 
 ## Project
 
-**Title:** Early Skeleton Action Recognition with Coarse Intent Supervision and Long-Short Sequence Consistency
+**Title:** ACmix-Inspired Compute Acceleration for SkateFormer-Based Skeleton Action Recognition
 
-**Primary Question:** How can a skeleton-based action-recognition model classify actions reliably from partial motion prefixes, especially at low observation ratios, without relying on frame-level stage annotation or complex sub-action parsing?
+**Primary Question:** How can the current `SkateFormer` backbone be restructured to reduce real inference cost, especially the dominant channel-mixing and multi-branch aggregation overhead, while preserving strong full-sequence recognition accuracy?
 
 ## Executive Summary
 
-The project has pivoted away from the earlier acceleration-and-deployment plan for rehabilitation exoskeleton control. That direction is now deprecated as the main line of work. The current primary research thread is early skeleton action recognition.
+The branch has pivoted back to computation acceleration as the primary line of work. The earlier early-recognition plan is now archived for this branch and should not define the benchmark, success criteria, or method design.
 
-The new focus is to build a clean early-recognition protocol on `NTU60`, establish a strong `SkateFormer-prefix` baseline, and then test whether a small set of lightweight ideas improve low-observation-ratio performance:
+The new focus is to treat `SkateFormer` as the baseline system, profile where the current block spends computation, and then design an `ACmix`-inspired replacement that shares feature generation across attention-like and convolution-like aggregation paths. The goal is not to paste an image-model block blindly into a skeleton model. The goal is to use the `ACmix` design principle to build a skeleton-specific acceleration path that is measurable on real latency, not only on paper FLOPs.
 
-- fixed coarse intent supervision
-- full-prefix consistency learning
-- ratio-adaptive coarse-to-fine semantic supervision
-- uncertainty-aware full-to-prefix consistency
-- optional confusion-aware language prototype distillation
+The first active plan is to:
 
-The intended contribution is not a heavy pipeline. The design goal is a simple and reproducible early-recognition framework that uses only action labels plus manually organized coarse intent labels, while using the full sequence only during training as a stabilizing reference.
+- freeze one canonical compute benchmark on `NTU60`
+- profile the current `SkateFormerBlock`
+- redesign the `SkateFormerBlock` around a partition-free and branch-collapsed mixer
+- compare stage-wise replacement variants
+- validate a real Pareto improvement under matched accuracy evaluation
+
+The current paper-facing hypothesis is now more specific than a generic `ACmix` transplant. For the pruned small-joint regime, especially `B=1` and `V=14`, the most defensible contribution is to remove explicit `partition -> reverse -> cat -> proj` style structure as a block-design principle, not merely to micro-optimize one tensor op.
 
 ## Locked Scope
 
-- **Primary task:** Early skeleton action recognition
+- **Primary task:** Full-sequence skeleton action recognition with explicit compute acceleration
 - **Primary backbone:** `SkateFormer`
 - **Primary dataset:** `NTU60`
 - **Primary protocols:** `XSub`, `XView`
-- **Observation ratios:** `0.1`, `0.3`, `0.5`, `0.7`, `0.9`, `1.0`
+- **Primary input convention:** `T=64`, `V=25`, `M=2` unless a pruning variant explicitly changes it
 - **Execution environment:** Run `SkateFormer` training and evaluation inside the `conda` environment `skateformer`
-- **Primary comparison target:** Prefix-only baseline under the same early protocol
-- **Main auxiliary signal:** Coarse intent labels derived from original action labels
-- **Main training aid:** Full-sequence branch used only during training
-- **Deferred extension:** `NTU120`
-- **Explicitly deprecated main line:** Real-time acceleration / Jetson deployment / exoskeleton control optimization
+- **Primary comparison target:** Unmodified `SkateFormer` under matched data and benchmark settings
+- **Primary reference paper:** `On the Integration of Self-Attention and Convolution (ACmix)`
+- **Primary outputs:** model variants, latency tables, FLOPs tables, parameter tables, accuracy tables
+- **Deferred extension:** `NTU120`, device-specific deployment work, quantization
+- **Explicitly archived line:** Early skeleton action recognition from partial prefixes
 
 ## Hard Success Criteria
 
-- **Protocol clarity:** One fixed early-recognition data protocol with reproducible prefix construction
-- **Baseline clarity:** A stable `SkateFormer-prefix` baseline on `NTU60 XSub`
-- **Method validity:** At least one of `intent-only`, `consistency-only`, or `full model` improves low observation ratios over the prefix baseline
-- **Ablation completeness:** Clear separation of gains from `multi-ratio`, `intent`, `consistency`, and `KD-only`
-- **Narrative stability:** The final claim must remain valid under at least two coarse-intent mapping schemes
-- **Refinement honesty:** Any improved intent or consistency variant must be compared against the plain `intent-only` and `KD-only` references rather than replacing them silently
+- **Benchmark clarity:** One fixed accuracy path and one fixed inference-benchmark path
+- **Profiling clarity:** The dominant cost inside the current block is measured before redesign claims are made
+- **Method validity:** At least one acceleration variant improves the accuracy-latency or accuracy-FLOPs Pareto frontier over baseline
+- **Ablation completeness:** Gains from block redesign, stage-wise replacement, width reduction, and optional pruning are separated cleanly
+- **Latency honesty:** Real wall-clock speedup must be reported alongside FLOPs
+- **Narrative discipline:** If a variant only reduces FLOPs but not latency, the claim must be narrowed accordingly
 
 ## Research Hypotheses
 
-### H0: Protocol Lock
+### H0: Benchmark Freeze
 
-If the early-recognition protocol is frozen before large-scale experiments, later comparisons across baselines and methods will remain fair and interpretable.
+If the accuracy protocol and inference benchmark are frozen before major redesign, later claims about acceleration will remain fair and interpretable.
 
-**Reason this matters:** Early recognition is easy to confound if prefix cropping, interpolation, ratio scheduling, and evaluation settings drift over time.
+**Reason this matters:** Acceleration results are easy to distort when batch size, device, input shape, warmup, or checkpoint quality drift across runs.
 
-### H1: Coarse Intent Helps Early Recognition
+### H1: ACmix-Style Shared Projection Can Improve The Pareto Frontier
 
-Coarse intent labels provide more stable high-level supervision than fine action labels in the low-observation regime and therefore improve early skeleton recognition.
+The current block can be redesigned around a more aggressive shared-projection budget so that attention-like and convolution-like aggregation reuse the same intermediate features and reduce total compute at comparable accuracy.
 
-**Reason this matters:** Many action pairs are visually ambiguous in the prefix stage but already separable at a coarser semantic level.
+**Reason this matters:** The current model already mixes graph, temporal, and attention branches, so the main opportunity is not adding more branches, but simplifying how expensive channel mixing is produced and consumed.
 
-### H2: Full-Prefix Consistency Stabilizes Prefix Predictions
+### H2: Partial Replacement Will Beat Full Replacement Early
 
-Using a full-sequence branch as a training-time teacher or consistency target reduces premature bias and improves prefix-stage prediction stability.
+Replacing only the most expensive or least cost-effective stages will produce a better early Pareto frontier than replacing every block at once.
 
-**Reason this matters:** Prefix inputs often underdetermine the final class, so a full-sequence reference may regularize the decision boundary.
+**Reason this matters:** Different stages may have different sensitivity to attention-range modeling versus local aggregation.
 
-### H3: Combined Intent And Consistency Matter Most At Low Ratios
+### H3: Distillation Will Be More Useful Than Architectural Over-Expansion
 
-The joint model will produce its clearest gains at `0.1` and `0.3`, while benefits will shrink as the observation ratio approaches full observation.
+If the accelerated student loses noticeable accuracy, a teacher-guided recovery path will be more efficient than adding back heavy modules.
 
-**Reason this matters:** If gains appear only at high ratios, the method is not solving the core early-recognition problem.
+**Reason this matters:** The branch objective is compute reduction, not designing a larger hybrid than the original model.
 
-### H4: The Claim Survives Intent-Mapping Variation
+### H4: FLOPs Gains Must Translate To Real Latency Gains
 
-If the method remains useful under multiple coarse-intent grouping schemes, the contribution is more likely to reflect a real modeling effect rather than a fragile manual taxonomy.
+Some theoretically cheaper variants will not speed up real inference because partition, reshape, memory movement, or kernel-launch overhead dominates.
 
-**Reason this matters:** Coarse intent labels are partly human-designed and must be stress-tested for robustness.
+**Reason this matters:** The final claim should be about usable acceleration, not only symbolic arithmetic savings.
+
+### H5: Block Organization, Not A Single Operator, Is The Core Problem
+
+For the pruned low-`V` inference regime, the main `SkateFormer` inefficiency is better described as a block-organization problem than as one isolated kernel bottleneck. A partition-free and branch-collapsed redesign should therefore be more paper-worthy than only tuning attention count or MLP width.
+
+**Reason this matters:** Changing `attention` count or `mlp_ratio` is useful engineering, but the more defensible research claim is that explicit multi-partition branch materialization and concat-projection fusion become structurally inefficient after pruning.
 
 ## Near-Term Refinement Candidates
 
-- **Intent-improved:** Replace one fixed coarse label target with ratio-adaptive coarse-to-fine supervision so that very low ratios emphasize stable semantics while higher ratios shift weight toward fine action discrimination.
-- **Consistency-improved:** Replace plain full-to-prefix KL with uncertainty-aware consistency so that the full branch teaches most strongly when its own prediction is reliable.
-- **Optional advanced variant:** Add confusion-aware language prototype distillation only if the lighter semantic and consistency variants have already produced a stable `NTU60` story.
+- **Block redesign:** Replace the current explicit multi-partition branch materialization with a partition-free and branch-collapsed mixer.
+- **Fusion redesign:** Replace `cat + proj` with additive, gated, or low-rank fusion so the block no longer depends on large explicit branch concatenation.
+- **Shared projection:** Keep the `ACmix` lesson as a supporting design principle, but do not present shared projection alone as the main novelty claim.
+- **Stage-wise replacement:** Test early-only, late-only, and all-stage replacement schedules.
+- **Width refinement:** Reduce head count, branch width, or MLP expansion only after the new block is stable.
+- **Teacher recovery:** Add baseline-to-student distillation only if the accelerated block shows a promising compute gain but an avoidable accuracy drop.
+- **Structural extension:** Revisit joint-pruning combinations only after the block-level story is stable.
 
 ## Phase Plan
 
-### Phase 0: Protocol Freeze
+### Phase A0: Benchmark And Profiling Freeze
 
-**Goal:** Lock the early-recognition setting before committing to major training runs.
+**Goal:** Lock the canonical compute benchmark before redesigning the model.
 
 **Outputs**
-- Written definition of valid-frame counting and prefix cropping
-- Written interpolation policy and fixed sequence length
-- Fixed observation-ratio list
-- Reproducible baseline command path for `NTU60 XSub`
+- One canonical training/evaluation path for baseline accuracy
+- One canonical latency/FLOPs benchmarking command path
+- Fixed benchmark input shape and reporting template
+- Initial module-level profiling notes for the current block
 
 **Exit Criteria**
-- Prefix construction is unambiguous
-- Random crop and prefix crop are not mixed anywhere in the evaluation path
-- One baseline training path is identified as canonical
+- Speed and accuracy numbers are reproducible under one fixed setup
+- The benchmark no longer mixes archived early-recognition language with active acceleration language
+- The most expensive block components are explicitly identified
 
-### Phase 1: Prefix Baseline
+### Phase A1: Baseline Cost Audit
 
-**Goal:** Build the reference early-recognition baseline.
+**Goal:** Establish the baseline Pareto reference.
 
 **Outputs**
-- `SkateFormer-full` upper bound
-- `SkateFormer-prefix` baseline
-- `SkateFormer-prefix + multi-ratio` baseline
-- First per-ratio result table on `NTU60 XSub`
+- Baseline `Top-1`, latency, throughput, `GFLOPs`, parameter count
+- Stage-level or block-level profiling breakdown
+- Width/head/MLP sensitivity notes if cheap to collect
+- A paper-facing diagnosis of whether the core issue is operator cost or block organization
 
 **Exit Criteria**
-- The baseline runs end to end
-- Per-ratio metrics are stable enough to support ablations
+- The baseline is measured end to end
+- The first optimization target is chosen based on profiling rather than intuition alone
 
-### Phase 2: Single-Module Validation
+### Phase A2: ACmix-Style Prototype
 
-**Goal:** Measure each idea separately before combining them.
+**Goal:** Validate a first accelerated block design.
 
 **Outputs**
-- `intent-only`
-- `intent-improved` if plain intent supervision is too weak
-- `consistency-only`
-- `uncertainty-aware consistency` if plain consistency collapses to ordinary KD
-- `KD-only` or equivalent teacher-guided baseline
-- Optional `language-prototype distillation`
-- Comparison table against prefix and multi-ratio baselines
+- One `SkateFormer` variant with a partition-free / branch-collapsed mixed block
+- Matched benchmark table against baseline
+- Stability notes on training, memory, and implementation complexity
 
 **Exit Criteria**
-- Gain sources are separated cleanly
-- Terminology between `consistency` and `KD` is not redundant or ambiguous
+- The prototype shows either a promising Pareto gain or a clear failure mode worth revising
+- The redesigned block does not silently increase hidden overhead elsewhere
 
-### Phase 3: Full Model
+### Phase A3: Systematic Ablation
 
-**Goal:** Test the joint method.
+**Goal:** Separate where the gains really come from.
 
 **Outputs**
-- Joint `intent + consistency` model, using either the plain modules or the stronger refined variants
-- Main result table across observation ratios
-- Error analysis by action type and confusion pattern
+- Stage-wise replacement table
+- Branch-width or head-count ablation
+- Optional distillation recovery table
+- Accuracy-latency Pareto plot
 
 **Exit Criteria**
-- The joint model outperforms the strongest fair baseline on the key low-ratio regime, or the method is revised
+- The best accelerated variant is identified with a clean rationale
+- The claim is no longer dependent on one arbitrary architecture tweak
 
-### Phase 4: Robustness And Extension
+### Phase A4: Robustness And Extension
 
-**Goal:** Stress-test the claim and prepare the paper narrative.
+**Goal:** Check whether the best variant survives outside the first narrow setup.
 
 **Outputs**
-- Results under at least two coarse-intent mappings
 - `NTU60 XView` validation
-- Optional `NTU120` extension
+- Optional `NTU120` or alternate joint-count validation
+- Optional pruning-plus-architecture combination study
 - Final figures, tables, and writing backbone
 
 **Exit Criteria**
-- The paper story does not depend on one arbitrary mapping or one split
+- The acceleration story does not depend on one device, one split, or one misleading metric
 
 ## Inner-Loop Rules
 
-- Every experiment must report per-ratio `Top-1 Accuracy`
-- Low-ratio performance is the primary decision criterion, not full-ratio accuracy alone
-- The full-sequence branch must not add test-time inference cost
-- Prefix construction must be identical across all compared methods
-- If `consistency` is implemented as simple distillation, name it honestly and avoid inflated novelty claims
-- Claims about intent supervision must be checked against more than one label grouping
-- Plain `intent-only` remains a required reference even if `intent-improved` is later added
-- Optional language-based supervision is training-time only unless a stronger justification emerges
+- Every reported variant must include `Top-1`, latency, throughput, `GFLOPs`, and parameter count if measurable
+- Real latency is the primary decision criterion; FLOPs alone are insufficient
+- Accuracy comparisons must use the same data path and training budget unless clearly marked exploratory
+- A speedup claim is invalid if it depends on a weaker checkpoint or a changed input shape
+- If a method needs distillation to recover accuracy, that dependency must be stated explicitly
+- Archived early-recognition files must not be cited as active evidence for this branch
 
 ## Outer-Loop Triggers
 
 Run an outer-loop synthesis when any of the following happens:
 
-- The prefix baseline is stable on `NTU60 XSub`
-- A single-module ablation shows a clear and repeatable gain
-- The full model fails to beat a simpler baseline
-- Intent-mapping sensitivity becomes the dominant uncertainty
-- `NTU60 XSub` and `XView` begin to tell different stories
+- The baseline profile is frozen
+- A prototype block shows a repeatable latency gain
+- FLOPs and latency tell conflicting stories
+- Partial replacement beats full replacement decisively
+- `NTU60 XSub` and `XView` begin to tell different Pareto stories
 
 ## Immediate Next Actions
 
-1. Freeze the early-recognition protocol on `NTU60`.
-2. Build at least two coarse-intent mapping schemes.
-3. Implement and run the canonical `SkateFormer-prefix` baseline on `XSub`.
-4. Add `multi-ratio` training under the same protocol.
-5. Add `intent-only`, `consistency-only`, and `KD-only` before training the full joint model.
-6. If plain `intent-only` remains weak, test `intent-improved` as a ratio-adaptive semantic refinement instead of overwriting the original baseline.
-7. If plain `consistency-only` reduces to ordinary distillation, test an uncertainty-aware variant before claiming a distinct consistency contribution.
+1. Freeze the baseline accuracy config and the benchmark command for `SkateFormer`.
+2. Profile the current `SkateFormerBlock` under the pruned inference regime and separate operator cost from block-organization overhead.
+3. Design one skeleton-specific block that removes explicit `partition -> reverse -> cat -> proj` as the primary computation pattern.
+4. Test the redesigned block first in a partial stage replacement rather than a full-model swap.
+5. Use simple width or MLP reductions only as engineering baselines, not as the main paper claim.
+6. Only if the prototype has a promising cost reduction, add teacher-guided recovery for accuracy.
 
 ## Kill Criteria And Decision Points
 
-- If the prefix baseline cannot be reproduced cleanly, stop method design and fix the protocol first.
-- If coarse intent helps only under one fragile mapping, reduce the claim and reposition the contribution.
-- If `KD-only` already captures nearly all gains, simplify the method and drop redundant modules.
-- If the full model does not beat the best simpler baseline at low ratios, do not force the combined story.
-- If `NTU60` does not support a stable early-recognition narrative, do not expand to `NTU120` prematurely.
+- If the baseline benchmark is not stable, stop architecture iteration and fix measurement first.
+- If the redesigned block reduces FLOPs but not latency, narrow the claim or redesign the implementation.
+- If the accelerated block loses too much accuracy for a modest speed gain, do not force the method story.
+- If a simple width reduction beats the architectural change, prefer the simpler baseline.
+- If `NTU60` does not show a stable Pareto improvement, do not expand to `NTU120` or deployment claims prematurely.

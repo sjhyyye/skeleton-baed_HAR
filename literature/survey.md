@@ -1,17 +1,17 @@
 # Literature Survey
 
-This file tracks papers, reports, and implementation references relevant to the current early skeleton action-recognition project.
+This file tracks papers, reports, and implementation references relevant to the current acceleration-oriented `SkateFormer` project.
 
 ## Core Themes To Fill
 
-- Early action recognition from partial observation
-- Skeleton-based early recognition and multi-ratio evaluation
-- Full-sequence teacher guidance, distillation, or consistency learning for prefix prediction
-- Coarse semantic supervision, action families, or hierarchical labels for ambiguous early stages
-- NTU60 protocol choices that affect fair early-recognition comparison
+- `ACmix` and related attention-convolution integration work
+- Efficient hybrid blocks for vision transformers and action-recognition backbones
+- Skeleton-model acceleration: pruning, head reduction, token reduction, or stage-wise simplification
+- Profiling methodology for latency versus FLOPs
+- `NTU60` evaluation choices that affect fair accuracy-cost comparison
 
-## Secondary Background Only
+## Secondary Background
 
-- Lightweight engineering optimization, pruning, or deployment notes
-
-This secondary track is historical context, not the main research line.
+- Distillation for compact students
+- Device-specific deployment and quantization
+- Archived early-recognition papers from the previous branch direction

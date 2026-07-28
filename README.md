@@ -1,43 +1,40 @@
-# Early Skeleton Action Recognition
+# Skeleton-Based HAR Acceleration
 
-This repository is organized around one primary research line: early skeleton action recognition with `SkateFormer` on `NTU60`, using coarse-grained auxiliary supervision and long-short sequence consistency as the main modeling ideas.
+This repository is now organized around one primary research line: accelerating `SkateFormer`-style skeleton action recognition, with the current branch explicitly using `ACmix`-style shared projection as the main design reference.
 
-The current project phase is single-module ablation on top of a substantially completed `H1` baseline family. The repository now contains single-ratio prefix baselines at `r=0.1` and `r=0.3`, plus a six-ratio `prefix_multi` baseline on `NTU60 XSub`; `prefix_multi` is currently stronger than matched single-ratio training at both `0.1` and `0.3`. The next priority is to test `KD-only` and `consistency-only` cleanly before training any joint model.
+The active question is no longer early action recognition from partial prefixes. The active question is whether the current `SkateFormerBlock` can be restructured for a better accuracy-latency-FLOPs Pareto frontier, while keeping the benchmark centered on standard full-sequence skeleton classification.
 
 ## Current Focus
 
-- Task: early skeleton action recognition from partial prefixes
+- Task: compute acceleration for full-sequence skeleton action recognition
 - Backbone: `SkateFormer`
+- Reference direction: `ACmix`-style shared projection plus lightweight dual aggregation
 - Primary benchmark: `NTU60`
 - Split order: `XSub` first, `XView` second
-- Observation ratios: `0.1`, `0.3`, `0.5`, `0.7`, `0.9`, `1.0`
-- Main question: can coarse semantic supervision and training-time full-sequence guidance improve low-ratio recognition without adding test-time complexity?
+- Primary metrics: `Top-1`, latency, throughput, `GFLOPs`, parameter count
+- Main question: can we reduce real inference cost without paying an unacceptable accuracy penalty?
 
 ## Repository Map
 
 - `SkateFormer/`
-  Upstream backbone code plus local dataset/config changes used for the current project.
-- `data/label_mappings/ntu60/`
-  Machine-readable coarse supervision mappings for NTU60.
-- `experiments/H0_protocol-freeze/`
-  Canonical early-recognition protocol freeze notes.
-- `experiments/H1_prefix-baseline/`
-  Prefix and multi-ratio baseline stage.
-- `experiments/H2_single-module-ablation/`
-  `intent-only`, `consistency-only`, and `KD-only` validation stage.
-- `experiments/H3_joint-model-and-robustness/`
-  Full-model and robustness stage.
-- `experiments/legacy_engineering_optimization.md`
-  Short historical note for the older pruning/compression/deployment thread.
+  Backbone code plus local training, evaluation, and benchmarking utilities.
+- `SkateFormer/tools/benchmark_inference.py`
+  Canonical local latency and FLOPs measurement entry point.
+- `experiments/acceleration_baseline_note.md`
+  Acceleration-oriented baseline note, including the older pruning table and current benchmark conventions.
+- `experiments/H0_protocol-freeze/`, `H1_prefix-baseline/`, `H2_single-module-ablation/`, `H3_joint-model-and-robustness/`
+  Archived material from the earlier early-recognition direction. Keep for record only; do not treat as the current benchmark definition.
 - `research-plan.md`
-  Main project plan.
+  Main acceleration plan in English.
+- `acceleration_research_plan.md`
+  Detailed execution-oriented acceleration plan in Chinese.
 - `research-state.yaml`
   Central project tracking state.
 - `findings.md`
-  Condensed current understanding.
+  Condensed current understanding and next decisions.
 - `literature/`
-  Survey notes and label-mapping drafts.
+  Survey notes for acceleration, hybrid attention-convolution design, and profiling.
 
-## Historical Note
+## Archive Note
 
-An older engineering-oriented line on joint pruning, compression, and deployment remains in the repository as background only. It is not the active benchmark definition, not the current success criterion, and should not drive the main paper narrative unless the project explicitly pivots back.
+The previous early-recognition line remains in the repository as archived context. Its experiment folders, label-mapping files, and notes are no longer the active research plan for this branch.
