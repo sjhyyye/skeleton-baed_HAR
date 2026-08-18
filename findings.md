@@ -22,13 +22,14 @@ The current paper-facing direction is now narrower than a generic ACmix adaptati
 ## Current Status
 
 - The active direction is now `SkateFormer` acceleration, not early recognition.
-- The new central benchmark is standard full-sequence `NTU60`, with `XSub` first and `XView` second.
+- The new central benchmark is standard full-sequence `NTU60`, with `XSub` first and `XView` second; the canonical inference input is `(B, C, T, V, M) = (1, 3, 64, 14, 1)`.
 - The first phase is benchmark freeze and cost profiling, not model ablation.
 - The earlier early-recognition experiment folders remain archived only.
 
 ## What Is Already Clear
 
 - The repository already contains a usable inference benchmark entry point in `SkateFormer/tools/benchmark_inference.py`.
+- A standalone `PartitionFreeBranchCollapsedBlock` prototype and block-level benchmark exist, but the prototype is not yet wired into the full SkateFormer stages.
 - The current block structure suggests that `mapping`, multi-branch aggregation, `proj`, and `MLP` are the first places to audit.
 - The repository also contains older pruning evidence, which is useful as acceleration context but should not be treated as the current baseline table.
 - An architecture claim will only be credible if it beats simple baselines such as width reduction, head reduction, or old pruning settings.

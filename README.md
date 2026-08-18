@@ -11,6 +11,7 @@ The active question is no longer early action recognition from partial prefixes.
 - Reference direction: `ACmix`-style shared projection plus lightweight dual aggregation
 - Primary benchmark: `NTU60`
 - Split order: `XSub` first, `XView` second
+- Canonical inference input: `(B, C, T, V, M) = (1, 3, 64, 14, 1)`
 - Primary metrics: `Top-1`, latency, throughput, `GFLOPs`, parameter count
 - Main question: can we reduce real inference cost without paying an unacceptable accuracy penalty?
 

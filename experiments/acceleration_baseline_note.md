@@ -29,6 +29,8 @@ The acceleration line currently emphasizes:
 
 Treat the table below as historical acceleration evidence that informs the new branch, not as the finished benchmark for the new branch.
 
+The active canonical inference benchmark is `(B, C, T, V, M) = (1, 3, 64, 14, 1)`. Results using 25 joints, two people, or larger batches must be labeled as historical or auxiliary and must not be mixed into the canonical result table.
+
 ## Historical Joint-Pruning Table
 
 The following table preserves the older pruning exploration results.

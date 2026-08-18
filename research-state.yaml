@@ -20,7 +20,7 @@ literature:
   evidence_gaps:
     - "No fresh baseline latency table has been logged under the new branch definition."
     - "No module-level profile has yet separated `mapping`, `proj`, `mlp`, and partitioned attention overhead."
-    - "No ACmix-style skeleton block has yet been implemented or benchmarked in this branch."
+    - "A partition-free prototype block exists, but it has not yet been integrated into the full model or evaluated for end-to-end accuracy and latency."
     - "No matched XView validation exists for the new acceleration line."
 
 hypotheses:
@@ -80,7 +80,7 @@ plan:
   primary_benchmark:
     name: "NTU60 full-sequence skeleton action recognition with matched compute benchmarking"
     status: active_freeze
-    note: "Use XSub first, then XView. The benchmark must always report both recognition quality and compute cost."
+    note: "Use XSub first, then XView. Canonical inference input is B=1, C=3, T=64, V=14, M=1; the benchmark must always report both recognition quality and compute cost."
   secondary_benchmark:
     name: "NTU120 or reduced-joint extension"
     status: deferred
@@ -92,14 +92,14 @@ plan:
     - "Freeze the canonical accuracy and inference benchmark paths."
     - "Build a fresh baseline table for unmodified SkateFormer."
     - "Profile the current block and decide whether the main issue is operator cost or block organization."
-    - "Implement and benchmark a partition-free / branch-collapsed redesign prototype."
+    - "Integrate and benchmark the existing partition-free / branch-collapsed prototype in the full model."
     - "Separate stage-wise replacement, width reduction, and optional distillation effects."
     - "Validate the best variant on XView before making a broader claim."
   next_actions:
-    - "Write down the canonical baseline benchmark command using `SkateFormer/tools/benchmark_inference.py`."
+    - "Write down the canonical baseline benchmark command using `SkateFormer/tools/benchmark_inference.py` with B=1, T=64, V=14, M=1."
     - "Measure the baseline model under fixed input and device settings."
     - "Inspect whether the paper-worthy issue is explicit partition / branch materialization / concat-projection rather than one isolated operator."
-    - "Prototype a skeleton-specific partition-free and branch-collapsed block before broader architecture churn."
+    - "Integrate the existing skeleton-specific partition-free and branch-collapsed block before broader architecture churn."
     - "Treat archived early-recognition files as history only, not as active evidence."
 
 workspace:

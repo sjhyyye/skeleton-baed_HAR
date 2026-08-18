@@ -28,7 +28,7 @@ The current paper-facing hypothesis is now more specific than a generic `ACmix` 
 - **Primary backbone:** `SkateFormer`
 - **Primary dataset:** `NTU60`
 - **Primary protocols:** `XSub`, `XView`
-- **Primary input convention:** `T=64`, `V=25`, `M=2` unless a pruning variant explicitly changes it
+- **Canonical inference benchmark:** `B=1`, `T=64`, `V=14`, `M=1`
 - **Execution environment:** Run `SkateFormer` training and evaluation inside the `conda` environment `skateformer`
 - **Primary comparison target:** Unmodified `SkateFormer` under matched data and benchmark settings
 - **Primary reference paper:** `On the Integration of Self-Attention and Convolution (ACmix)`
@@ -185,7 +185,7 @@ Run an outer-loop synthesis when any of the following happens:
 
 ## Immediate Next Actions
 
-1. Freeze the baseline accuracy config and the benchmark command for `SkateFormer`.
+1. Freeze the baseline accuracy config and the canonical inference benchmark at `B=1`, `T=64`, `V=14`, `M=1` for `SkateFormer`.
 2. Profile the current `SkateFormerBlock` under the pruned inference regime and separate operator cost from block-organization overhead.
 3. Design one skeleton-specific block that removes explicit `partition -> reverse -> cat -> proj` as the primary computation pattern.
 4. Test the redesigned block first in a partial stage replacement rather than a full-model swap.
