@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import drop_path, trunc_normal_, Mlp, DropPath, create_act_layer, get_norm_act_layer, create_conv2d
+from .operators import SkateRCABlock
 
 ''' Partition and Reverse '''
 
@@ -248,7 +249,9 @@ class SkateFormerBlockDS(nn.Module):
             self, in_channels, out_channels, num_points=50, kernel_size=7, downscale=False, num_heads=32,
             type_1_size=(1, 1), type_2_size=(1, 1), type_3_size=(1, 1), type_4_size=(1, 1),
             attn_drop=0., drop=0., rel=True, drop_path=0., mlp_ratio=4.,
-            act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm):
+            act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm,
+            block_type='skateformer', rca_rank=2, rca_qk_ratio=0.25,
+            rca_temporal_anchors=16, rca_ffn_ratio=None):
         super(SkateFormerBlockDS, self).__init__()
 
         if downscale:
@@ -256,7 +259,14 @@ class SkateFormerBlockDS(nn.Module):
         else:
             self.downsample = None
 
-        self.transformer = SkateFormerBlock(
+        block_type = str(block_type).lower()
+        if block_type in ('skateformer', 'baseline', 'original'):
+            block_class = SkateFormerBlock
+        elif block_type in ('skate_rca', 'rca'):
+            block_class = SkateRCABlock
+        else:
+            raise ValueError(f'unknown block_type: {block_type}')
+        block_kwargs = dict(
             in_channels=out_channels,
             num_points=num_points,
             kernel_size=kernel_size,
@@ -274,12 +284,21 @@ class SkateFormerBlockDS(nn.Module):
             norm_layer=norm_layer_transformer,
         )
 
+        if block_class is SkateRCABlock:
+            block_kwargs.update(
+                relation_rank=rca_rank,
+                qk_ratio=rca_qk_ratio,
+                temporal_anchors=rca_temporal_anchors,
+                ffn_ratio=rca_ffn_ratio,
+            )
+        self.transformer = block_class(**block_kwargs)
     def forward(self, input):
         if self.downsample is not None:
             output = self.transformer(self.downsample(input))
         else:
             output = self.transformer(input)
         return output
+
 
 
 ''' SkateFormer Stage '''
@@ -291,7 +310,9 @@ class SkateFormerStage(nn.Module):
             num_points=50, kernel_size=7, num_heads=32,
             type_1_size=(1, 1), type_2_size=(1, 1), type_3_size=(1, 1), type_4_size=(1, 1),
             attn_drop=0., drop=0., rel=True, drop_path=0., mlp_ratio=4.,
-            act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm):
+            act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm,
+            block_type='skateformer', rca_rank=2, rca_qk_ratio=0.25,
+            rca_temporal_anchors=16, rca_ffn_ratio=None):
         super(SkateFormerStage, self).__init__()
         blocks = []
         for index in range(depth):
@@ -313,7 +334,11 @@ class SkateFormerStage(nn.Module):
                     drop_path=drop_path if isinstance(drop_path, float) else drop_path[index],
                     mlp_ratio=mlp_ratio,
                     act_layer=act_layer,
-                    norm_layer_transformer=norm_layer_transformer))
+                    norm_layer_transformer=norm_layer_transformer,
+                    block_type=block_type, rca_rank=rca_rank,
+                    rca_qk_ratio=rca_qk_ratio,
+                    rca_temporal_anchors=rca_temporal_anchors,
+                    rca_ffn_ratio=rca_ffn_ratio))
         self.blocks = nn.ModuleList(blocks)
 
     def forward(self, input):
@@ -333,7 +358,9 @@ class SkateFormer(nn.Module):
                  attn_drop=0., head_drop=0., drop=0., rel=True, drop_path=0., mlp_ratio=4.,
                  act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm, index_t=False, global_pool='avg',
                  intent_num_classes=0, intent_condition_mode='none', intent_condition_on='probs',
-                 intent_condition_detach=False, intent_action_bias_scale=1.0, intent_action_gate_scale=1.0):
+                 intent_condition_detach=False, intent_action_bias_scale=1.0, intent_action_gate_scale=1.0,
+                 block_type='skateformer', rca_rank=2, rca_qk_ratio=0.25,
+                 rca_temporal_anchors=16, rca_ffn_ratio=None):
 
         super(SkateFormer, self).__init__()
 
@@ -408,7 +435,11 @@ class SkateFormer(nn.Module):
                     drop_path=drop_path[sum(depths[:index]):sum(depths[:index + 1])],
                     mlp_ratio=mlp_ratio,
                     act_layer=act_layer,
-                    norm_layer_transformer=norm_layer_transformer
+                    norm_layer_transformer=norm_layer_transformer,
+                    block_type=block_type, rca_rank=rca_rank,
+                    rca_qk_ratio=rca_qk_ratio,
+                    rca_temporal_anchors=rca_temporal_anchors,
+                    rca_ffn_ratio=rca_ffn_ratio
                 )
             )
         self.stages = nn.ModuleList(stages)
