@@ -1,5 +1,16 @@
 # Autoresearch Plan
 
+## Current experiment scope (2026-10-08)
+
+The user has defined this branch around module improvements over the **14-joint,
+one-person NTU60 XSub baseline using original SkateFormer blocks**.
+Use [the experiment index](experiments/README.md) and [current results](experiments/RESULTS.md)
+for records; earlier pruning/early-recognition results are [archived](experiments/archive/README.md).
+The user log reports baseline Top-1 88.9307% at epoch 497; the interleaved log and actual checkpoint still require verification (2026-10-10).
+Skate-RCA has been wired into the full model; stage-selective replacement and matched evaluation
+remain to be established. Do not confuse it with the older standalone partition-free prototype.
+
+
 ## Project
 
 **Title:** ACmix-Inspired Compute Acceleration for SkateFormer-Based Skeleton Action Recognition

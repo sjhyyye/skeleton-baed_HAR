@@ -20,7 +20,7 @@ literature:
   evidence_gaps:
     - "No fresh baseline latency table has been logged under the new branch definition."
     - "No module-level profile has yet separated `mapping`, `proj`, `mlp`, and partitioned attention overhead."
-    - "A partition-free prototype block exists, but it has not yet been integrated into the full model or evaluated for end-to-end accuracy and latency."
+    - "The older partition-free prototype remains standalone; Skate-RCA is integrated into the full model, but matched run evidence is missing."
     - "No matched XView validation exists for the new acceleration line."
 
 hypotheses:
@@ -65,10 +65,15 @@ experiments:
   proxy_metric: "Accuracy-latency-FLOPs Pareto frontier under a fixed full-sequence NTU60 benchmark."
   baseline_value: {}
   best_value: {}
-  total_runs: 0
+  total_runs: 0  # Verified completed runs in the current module-comparison line.
+  results_index: "experiments/RESULTS.md"
+  history_index: "experiments/archive/README.md"
+  baseline_run_id: "baseline_14p_1person_seed1"
+  baseline_record: "experiments/current/baseline_14p_1person_seed1/run.yaml"
+  baseline_status: "reported_completed_checkpoint_unverified"
   trajectory:
     - "Branch pivoted on 2026-07-27; early-recognition results are archived and no longer define the active baseline."
-    - "The first required output is a fresh baseline table for unmodified SkateFormer under the new benchmark definition."
+    - "The baseline is original SkateFormer blocks adapted to 14 joints and one person on NTU60 XSub; verified results are pending."
     - "The paper direction has now been narrowed from generic ACmix inspiration to a partition-free / branch-collapsed / cat-proj-free block redesign for pruned low-V inference."
 
 outer_loop:
@@ -85,12 +90,12 @@ plan:
     name: "NTU120 or reduced-joint extension"
     status: deferred
     note: "This is a later robustness study, not part of the current baseline-freeze phase."
-  current_phase: "A0_compute-baseline-freeze"
+  current_phase: "A0_14p_1person_xsub_baseline_registration"
   plan_document: "research-plan.md"
   detailed_plan_document: "acceleration_research_plan.md"
   milestones:
     - "Freeze the canonical accuracy and inference benchmark paths."
-    - "Build a fresh baseline table for unmodified SkateFormer."
+    - "Establish the 14-joint one-person XSub baseline, then record matched module improvements."
     - "Profile the current block and decide whether the main issue is operator cost or block organization."
     - "Integrate and benchmark the existing partition-free / branch-collapsed prototype in the full model."
     - "Separate stage-wise replacement, width reduction, and optional distillation effects."
@@ -99,7 +104,7 @@ plan:
     - "Write down the canonical baseline benchmark command using `SkateFormer/tools/benchmark_inference.py` with B=1, T=64, V=14, M=1."
     - "Measure the baseline model under fixed input and device settings."
     - "Inspect whether the paper-worthy issue is explicit partition / branch materialization / concat-projection rather than one isolated operator."
-    - "Integrate the existing skeleton-specific partition-free and branch-collapsed block before broader architecture churn."
+    - "Register matched Skate-RCA experiments only after the 14-joint one-person XSub baseline and measurement path are verified."
     - "Treat archived early-recognition files as history only, not as active evidence."
 
 workspace:

@@ -1,3 +1,5 @@
+> 历史归档（2026-10-08）：以下状态与结论保留原文，不代表当前实验进度。
+
 # 2026_5_12 旧剪枝实验总结
 
 ## 结论
@@ -61,7 +63,7 @@
 
 ## 相关文件位置
 
-- 原始整理表： [acceleration_baseline_note.md](/data00/home/sjh/programs/skeleton-baed_HAR/experiments/acceleration_baseline_note.md:1)
-- Pareto 图脚本： [plot_legacy_pruning_pareto.py](/data00/home/sjh/programs/skeleton-baed_HAR/src/plot_legacy_pruning_pareto.py:1)
-- Pareto 图 PNG： [legacy_joint_pruning_pareto.png](/data00/home/sjh/programs/skeleton-baed_HAR/paper/figures/legacy_joint_pruning_pareto.png)
-- Pareto 图 PDF： [legacy_joint_pruning_pareto.pdf](/data00/home/sjh/programs/skeleton-baed_HAR/paper/figures/legacy_joint_pruning_pareto.pdf)
+- 原始整理表： [acceleration_baseline_note.md](acceleration_baseline_note.md)
+- Pareto 图脚本： [plot_legacy_pruning_pareto.py](../../../src/plot_legacy_pruning_pareto.py)
+- Pareto 图 PNG： [legacy_joint_pruning_pareto.png](../../../paper/figures/legacy_joint_pruning_pareto.png)
+- Pareto 图 PDF： [legacy_joint_pruning_pareto.pdf](../../../paper/figures/legacy_joint_pruning_pareto.pdf)

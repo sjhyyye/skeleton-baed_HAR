@@ -1,0 +1,98 @@
+run_id: baseline_14p_1person_seed1
+role: baseline
+status: reported_completed_checkpoint_unverified
+registered_at: '2026-10-08'
+configuration:
+  source: SkateFormer/config/train/acceleration/baseline_14p_1person.yaml
+  snapshot: config.snapshot.yaml
+  sha256: aa0de42fee294d5fba57e2d87113130675a663cdbbc0922faabf3a989c12a49d
+  source_commit_at_registration: d253183d2793246826a512b4d6f945d938ed2726
+  actual_run_config_verified: false
+protocol:
+  dataset: NTU60
+  split: XSub
+  modality: joint
+  frames: 64
+  points: 14
+  people: 1
+  person_selection: first_person
+  joint_ids_1based:
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 8
+  - 9
+  - 10
+  - 12
+  - 15
+  - 16
+  - 19
+  - 20
+  - 21
+  block_type: skateformer
+  prefix_enabled: false
+  rca_enabled: false
+training:
+  seed: 1
+  batch_size: 32
+  planned_epochs: 500
+  completed_epochs: 500
+  base_lr: 0.00025
+  ffn_ratio: 4.0
+runtime:
+  started_at: null
+  finished_at: null
+  git_commit: null
+  gpu: null
+  python: null
+  pytorch: null
+  cuda: null
+artifacts:
+  expected_work_dir: SkateFormer/work_dir/acceleration/baseline_14p_1person_seed1
+  actual_config: null
+  training_log: evidence/2026-10-09_pasted_training_excerpt.txt
+  checkpoint: null
+  checkpoint_sha256: null
+  evaluation_log: null
+  benchmark_log: null
+metrics:
+  best_epoch: 497
+  top1_percent: 88.93067265117972
+  top5_percent: 97.71
+  latency_ms_per_sample: null
+  throughput_samples_per_second: null
+  gflops_per_sample: null
+  parameters: 3386707
+benchmark:
+  planned_input_shape:
+  - 1
+  - 3
+  - 64
+  - 14
+  - 1
+  planned_precision: fp32
+  actual_device: null
+  timing_method: null
+  warmup: null
+  iterations: null
+  repeats: null
+  flops_method: null
+notes:
+- Metrics transcribed from user log; actual run config, checkpoint and independent
+  evaluation are not verified.
+- At least one run reached the final summary; the second apparent stream ends after
+  epoch 500 without its own summary in this excerpt.
+- Do not count the repeated same-seed traces as independent seed repetitions.
+- Historical 94.23% is not this run; its dataset split is unknown.
+evidence_review:
+  received_at: '2026-10-10'
+  source: User-pasted partial log, not a full isolated run log.
+  sha256: 44a02536361f9bf89c0fe1a594bfe1dfdbb25370640805958e966f0f2a6f707a
+  summary_timestamp: 2026-10-09 22:58:08 (log timezone unspecified)
+  completion_basis: One final summary and epoch 500 evaluations appear in excerpt.
+  top5_basis: Epoch 497 evaluation, rounded to two decimals; not independently re-evaluated.
+  concern: Interleaved epoch streams and repeated identical metrics suggest concurrent
+    duplicate runs or merged outputs; shared-work-dir writes require confirmation.
+  checkpoint_verified: false

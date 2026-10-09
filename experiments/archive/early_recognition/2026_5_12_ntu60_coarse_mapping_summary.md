@@ -1,3 +1,5 @@
+> 历史归档（2026-10-08）：以下状态与结论保留原文，不代表当前实验进度。
+
 # 2026_5_12 NTU60 高层动作分类总结
 
 ## 结论
@@ -77,11 +79,11 @@
 
 ## 相关文件位置
 
-- 对照说明文档： [ntu60_coarse_mapping_comparison.md](/data00/home/sjh/skeleton-based-har/literature/ntu60_coarse_mapping_comparison.md:1)
-- Semantic 草案表： [ntu60_coarse_mapping_initial.csv](/data00/home/sjh/skeleton-based-har/literature/ntu60_coarse_mapping_initial.csv:1)
-- Trajectory 草案表： [ntu60_motion_mapping_initial.csv](/data00/home/sjh/skeleton-based-har/literature/ntu60_motion_mapping_initial.csv:1)
-- Semantic 训练配置： [semantic_coarse_v1.csv](/data00/home/sjh/skeleton-based-har/data/label_mappings/ntu60/semantic_coarse_v1.csv:1)
-- Semantic JSON 配置： [semantic_coarse_v1.json](/data00/home/sjh/skeleton-based-har/data/label_mappings/ntu60/semantic_coarse_v1.json:1)
-- Trajectory 训练配置： [trajectory_coarse_v1.csv](/data00/home/sjh/skeleton-based-har/data/label_mappings/ntu60/trajectory_coarse_v1.csv:1)
-- Trajectory JSON 配置： [trajectory_coarse_v1.json](/data00/home/sjh/skeleton-based-har/data/label_mappings/ntu60/trajectory_coarse_v1.json:1)
-- 两套映射对照表： [semantic_vs_trajectory_comparison.csv](/data00/home/sjh/skeleton-based-har/data/label_mappings/ntu60/semantic_vs_trajectory_comparison.csv:1)
+- 对照说明文档： [ntu60_coarse_mapping_comparison.md](../../../literature/ntu60_coarse_mapping_comparison.md)
+- Semantic 草案表： [ntu60_coarse_mapping_initial.csv](../../../literature/ntu60_coarse_mapping_initial.csv)
+- Trajectory 草案表： [ntu60_motion_mapping_initial.csv](../../../literature/ntu60_motion_mapping_initial.csv)
+- Semantic 训练配置： [semantic_coarse_v1.csv](../../../data/label_mappings/ntu60/semantic_coarse_v1.csv)
+- Semantic JSON 配置： [semantic_coarse_v1.json](../../../data/label_mappings/ntu60/semantic_coarse_v1.json)
+- Trajectory 训练配置： [trajectory_coarse_v1.csv](../../../data/label_mappings/ntu60/trajectory_coarse_v1.csv)
+- Trajectory JSON 配置： [trajectory_coarse_v1.json](../../../data/label_mappings/ntu60/trajectory_coarse_v1.json)
+- 两套映射对照表： [semantic_vs_trajectory_comparison.csv](../../../data/label_mappings/ntu60/semantic_vs_trajectory_comparison.csv)

@@ -4,6 +4,15 @@ This repository is now organized around one primary research line: accelerating 
 
 The active question is no longer early action recognition from partial prefixes. The active question is whether the current `SkateFormerBlock` can be restructured for a better accuracy-latency-FLOPs Pareto frontier, while keeping the benchmark centered on standard full-sequence skeleton classification.
 
+## Active Baseline
+
+The baseline is the repository's original SkateFormer block with 14 selected joints,
+the first person only, and NTU60 XSub. This is an adapted baseline, not the untouched
+official 24-joint/two-person configuration. RCA and early-recognition objectives are disabled.
+The user log reports Top-1 88.9307% at epoch 497; checkpoint verification is pending. Historical 94.23% must not be used as its accuracy.
+See [baseline record](experiments/current/baseline_14p_1person_seed1/README.md).
+This branch primarily records matched module improvements over that baseline.
+
 ## Current Focus
 
 - Task: compute acceleration for full-sequence skeleton action recognition
@@ -21,10 +30,10 @@ The active question is no longer early action recognition from partial prefixes.
   Backbone code plus local training, evaluation, and benchmarking utilities.
 - `SkateFormer/tools/benchmark_inference.py`
   Canonical local latency and FLOPs measurement entry point.
-- `experiments/acceleration_baseline_note.md`
-  Acceleration-oriented baseline note, including the older pruning table and current benchmark conventions.
-- `experiments/H0_protocol-freeze/`, `H1_prefix-baseline/`, `H2_single-module-ablation/`, `H3_joint-model-and-robustness/`
-  Archived material from the earlier early-recognition direction. Keep for record only; do not treat as the current benchmark definition.
+- [Experiment index](experiments/README.md) and [current results](experiments/RESULTS.md)
+  Module improvements against the 14-joint, one-person NTU60 XSub baseline.
+- [Historical results](experiments/archive/README.md)
+  Archived pruning and early-recognition evidence, separated from current results.
 - `research-plan.md`
   Main acceleration plan in English.
 - `acceleration_research_plan.md`
