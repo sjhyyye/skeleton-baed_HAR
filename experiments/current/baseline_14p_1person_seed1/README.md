@@ -29,13 +29,15 @@
 `SkateFormer/work_dir/acceleration/baseline_14p_1person_seed1/`。
 路径仅表示预期位置，不表示 checkpoint 已存在。
 
-## 运行方式
+## 运行方式（历史 batch=32）
+
+2026-10-10 起原配置入口已更新到 batch=128。下面命令改为使用本记录的冻结快照，以保留旧协议；实际新实验请使用 current 中带 bs128 的记录。
 
 在服务器 SkateFormer 目录执行：
 
 ```bash
 conda activate skateformer
-python -u main.py --config config/train/acceleration/baseline_14p_1person.yaml
+python -u main.py --config ../experiments/current/baseline_14p_1person_seed1/config.snapshot.yaml
 ```
 
 默认输出到终端并保留 work_dir/log.txt。若使用 --print-log False，

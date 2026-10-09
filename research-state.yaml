@@ -68,9 +68,9 @@ experiments:
   total_runs: 0  # Verified completed runs in the current module-comparison line.
   results_index: "experiments/RESULTS.md"
   history_index: "experiments/archive/README.md"
-  baseline_run_id: "baseline_14p_1person_seed1"
-  baseline_record: "experiments/current/baseline_14p_1person_seed1/run.yaml"
-  baseline_status: "reported_completed_checkpoint_unverified"
+  baseline_run_id: "baseline_14p_1person_bs128_seed1"
+  baseline_record: "experiments/current/baseline_14p_1person_bs128_seed1/README.md"
+  baseline_status: "configured_results_unverified"
   trajectory:
     - "Branch pivoted on 2026-07-27; early-recognition results are archived and no longer define the active baseline."
     - "The baseline is original SkateFormer blocks adapted to 14 joints and one person on NTU60 XSub; verified results are pending."
