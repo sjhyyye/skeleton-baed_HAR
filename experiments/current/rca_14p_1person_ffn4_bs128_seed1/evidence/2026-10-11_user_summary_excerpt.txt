@@ -1,0 +1,9 @@
+[ Sun Oct 11 17:53:47 2026 ] Best accuracy: 0.8826954570267483
+[ Sun Oct 11 17:53:47 2026 ] Epoch number: 489
+[ Sun Oct 11 17:53:47 2026 ] Model name: ./work_dir/acceleration/rca_14p_1person_ffn4_bs128_seed1
+[ Sun Oct 11 17:53:47 2026 ] Model total number of params: 3376819
+[ Sun Oct 11 17:53:47 2026 ] Weight decay: 0.1
+[ Sun Oct 11 17:53:47 2026 ] Base LR: 0.001
+[ Sun Oct 11 17:53:47 2026 ] Batch Size: 128
+[ Sun Oct 11 17:53:47 2026 ] Test Batch Size: 128
+[ Sun Oct 11 17:53:47 2026 ] seed: 1

@@ -1,0 +1,67 @@
+run_id: rca_14p_1person_ffn4_bs128_seed1
+experiment_id: M1
+status: reported_completed_checkpoint_unverified
+received_at: '2026-10-12'
+configuration:
+  snapshot: config.snapshot.yaml
+  sha256: fd1862ef3929078d825e9b58ae5c6318149e96ecd57690e50682efd1d08ed034
+  actual_run_config_verified: false
+protocol:
+  dataset: NTU60
+  split: XSub
+  points: 14
+  people: 1
+  frames: 64
+  basis: registered config; actual server config not yet supplied
+training:
+  batch_size: 128
+  test_batch_size: 128
+  base_lr: 0.001
+  seed: 1
+  completed_epochs: 500
+  ffn_ratio: 4
+metrics:
+  best_epoch: 489
+  top1_percent: 88.26954570267483
+  top5_at_best_epoch_percent: null
+  parameters: 3376819
+  latency_ms_per_sample: null
+  gflops_per_sample: null
+last_epoch:
+  epoch: 500
+  top1_percent: 88.01
+  top5_percent: 97.99
+  training_accuracy_percent: 94.71
+evidence:
+  source: user message, 2026-10-12
+  selected_verbatim_summary: evidence/2026-10-11_user_summary_excerpt.txt
+  summary_timestamp: 2026-10-11 17:53:47 (log timezone unspecified)
+  checkpoint: null
+  checkpoint_sha256: null
+  independent_evaluation_verified: false
+notes:
+- Reported results from one seed; no matched inference speed measurement yet.
+- 'Best-epoch Top-5 unknown: epoch 489 evaluation was not included. Do not substitute
+  epoch 500 Top-5.'
+observed_training_seconds:
+  epochs:
+  - 496
+  - 497
+  - 498
+  - 499
+  - 500
+  seconds:
+  - 60
+  - 59
+  - 59
+  - 59
+  - 60
+  source: timestamps in user message; training portion only, approximate, not a controlled
+    benchmark
+architecture_benchmark:
+  record: experiments/current/inference_20261012/results.json
+  model_key: M1
+  weights: random_seed_1
+  checkpoint_benchmark: false
+  mean_latency_ms: 11.694140138337389
+  counted_gflops_per_sample: 1.807211296

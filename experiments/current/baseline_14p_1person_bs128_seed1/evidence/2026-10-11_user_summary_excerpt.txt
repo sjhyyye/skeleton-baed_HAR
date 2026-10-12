@@ -1,0 +1,9 @@
+[ Sun Oct 11 08:05:28 2026 ] Best accuracy: 0.8893067265117972
+[ Sun Oct 11 08:05:28 2026 ] Epoch number: 500
+[ Sun Oct 11 08:05:28 2026 ] Model name: ./work_dir/acceleration/baseline_14p_1person_bs128_seed1
+[ Sun Oct 11 08:05:28 2026 ] Model total number of params: 3386707
+[ Sun Oct 11 08:05:28 2026 ] Weight decay: 0.1
+[ Sun Oct 11 08:05:28 2026 ] Base LR: 0.001
+[ Sun Oct 11 08:05:28 2026 ] Batch Size: 128
+[ Sun Oct 11 08:05:28 2026 ] Test Batch Size: 128
+[ Sun Oct 11 08:05:28 2026 ] seed: 1

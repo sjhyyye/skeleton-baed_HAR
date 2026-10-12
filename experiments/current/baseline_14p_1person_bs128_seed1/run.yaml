@@ -1,0 +1,59 @@
+run_id: baseline_14p_1person_bs128_seed1
+experiment_id: B0
+status: reported_completed_checkpoint_unverified
+received_at: '2026-10-12'
+configuration:
+  snapshot: config.snapshot.yaml
+  sha256: bf66687bff350744e60820b0c1fcb4b05b0844c23c60529a9c0c8e6e1a332aea
+  actual_run_config_verified: false
+protocol:
+  dataset: NTU60
+  split: XSub
+  points: 14
+  people: 1
+  frames: 64
+  basis: registered config; actual server config not yet supplied
+training:
+  batch_size: 128
+  test_batch_size: 128
+  base_lr: 0.001
+  seed: 1
+  completed_epochs: 500
+  ffn_ratio: 4
+metrics:
+  best_epoch: 500
+  top1_percent: 88.93067265117972
+  top5_at_best_epoch_percent: 97.74
+  parameters: 3386707
+  latency_ms_per_sample: null
+  gflops_per_sample: null
+last_epoch:
+  epoch: 500
+  top1_percent: 88.93
+  top5_percent: 97.74
+  training_accuracy_percent: 98.45
+evidence:
+  source: user message, 2026-10-12
+  selected_verbatim_summary: evidence/2026-10-11_user_summary_excerpt.txt
+  summary_timestamp: 2026-10-11 08:05:28 (log timezone unspecified)
+  checkpoint: null
+  checkpoint_sha256: null
+  independent_evaluation_verified: false
+notes:
+- Reported results from one seed; no matched inference speed measurement yet.
+observed_training_seconds:
+  epochs:
+  - 499
+  - 500
+  seconds:
+  - 73
+  - 73
+  source: timestamps in user message; training portion only, approximate, not a controlled
+    benchmark
+architecture_benchmark:
+  record: experiments/current/inference_20261012/results.json
+  model_key: B0
+  weights: random_seed_1
+  checkpoint_benchmark: false
+  mean_latency_ms: 17.02782561292406
+  counted_gflops_per_sample: 1.994589872

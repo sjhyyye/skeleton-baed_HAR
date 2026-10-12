@@ -9,7 +9,7 @@ The active question is no longer early action recognition from partial prefixes.
 The baseline is the repository's original SkateFormer block with 14 selected joints,
 the first person only, and NTU60 XSub. This is an adapted baseline, not the untouched
 official 24-joint/two-person configuration. RCA and early-recognition objectives are disabled.
-The user log reports Top-1 88.9307% at epoch 497; checkpoint verification is pending. Historical 94.23% must not be used as its accuracy.
+Batch-128 user logs report B0 Top-1 88.9307% at epoch 500 and M1 RCA 88.2695% at epoch 489; checkpoint and latency verification are pending. Historical 94.23% must not be used as its accuracy.
 See [baseline record](experiments/current/baseline_14p_1person_seed1/README.md).
 This branch primarily records matched module improvements over that baseline.
 

@@ -63,14 +63,15 @@ hypotheses:
 
 experiments:
   proxy_metric: "Accuracy-latency-FLOPs Pareto frontier under a fixed full-sequence NTU60 benchmark."
-  baseline_value: {}
-  best_value: {}
-  total_runs: 0  # Verified completed runs in the current module-comparison line.
+  baseline_value: {top1_percent: 88.93067265117972, best_epoch: 500, evidence: "user_log_checkpoint_unverified"}
+  best_value: {top1_percent: 88.93067265117972, run_id: "baseline_14p_1person_bs128_seed1", criterion: "reported_top1_only_not_pareto"}
+  total_runs: 0  # Independently verified runs; reported completions counted separately.
+  reported_completed_runs: 2
   results_index: "experiments/RESULTS.md"
   history_index: "experiments/archive/README.md"
   baseline_run_id: "baseline_14p_1person_bs128_seed1"
-  baseline_record: "experiments/current/baseline_14p_1person_bs128_seed1/README.md"
-  baseline_status: "configured_results_unverified"
+  baseline_record: "experiments/current/baseline_14p_1person_bs128_seed1/run.yaml"
+  baseline_status: "reported_completed_checkpoint_unverified"
   trajectory:
     - "Branch pivoted on 2026-07-27; early-recognition results are archived and no longer define the active baseline."
     - "The baseline is original SkateFormer blocks adapted to 14 joints and one person on NTU60 XSub; verified results are pending."
@@ -90,7 +91,7 @@ plan:
     name: "NTU120 or reduced-joint extension"
     status: deferred
     note: "This is a later robustness study, not part of the current baseline-freeze phase."
-  current_phase: "A0_14p_1person_xsub_baseline_registration"
+  current_phase: "A1_B0_M1_checkpoint_and_latency_validation"
   plan_document: "research-plan.md"
   detailed_plan_document: "acceleration_research_plan.md"
   milestones:

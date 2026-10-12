@@ -6,7 +6,7 @@ The user has defined this branch around module improvements over the **14-joint,
 one-person NTU60 XSub baseline using original SkateFormer blocks**.
 Use [the experiment index](experiments/README.md) and [current results](experiments/RESULTS.md)
 for records; earlier pruning/early-recognition results are [archived](experiments/archive/README.md).
-The user log reports baseline Top-1 88.9307% at epoch 497; the interleaved log and actual checkpoint still require verification (2026-10-10).
+Batch-128 user logs report B0 Top-1 88.9307% at epoch 500 and M1 RCA 88.2695% at epoch 489 (2026-10-12). Checkpoints and matched inference latency remain unverified; the older interleaved batch-32 log is a separate record.
 Skate-RCA has been wired into the full model; stage-selective replacement and matched evaluation
 remain to be established. Do not confuse it with the older standalone partition-free prototype.
 

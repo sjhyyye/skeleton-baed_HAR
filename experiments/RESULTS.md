@@ -3,12 +3,36 @@
 协议：NTU60 XSub，joint 输入，14 点、第一人、64 帧。对照为原始 SkateFormer block。
 当前训练协议为 batch=128、base LR=1e-3、500 epochs、seed=1；主测速仍为 batch=1、FP32，同设备同计时口径比较。
 
-## 当前 batch=128 对照（2026-10-10）
+## 当前 batch=128 对照（结果更新：2026-10-12）
 
-| 实验 | 运行记录 | 模块 | Top-1 | 状态 |
-|---|---|---|---|---|
-| B0 | [baseline_14p_1person_bs128_seed1](current/baseline_14p_1person_bs128_seed1/README.md) | 原始 SkateFormer，FFN=4 | 待补 | 配置已准备 |
-| M1 | [rca_14p_1person_ffn4_bs128_seed1](current/rca_14p_1person_ffn4_bs128_seed1/README.md) | 全 stage RCA，FFN=4 | 待补 | 配置已准备 |
+| 实验 | 运行记录 | 模块 | Best Top-1 (%) | 差值 (百分点) | Best epoch | Top-5 @ best (%) | 参数量 |
+|---|---|---|---:|---:|---:|---|---:|
+| B0 | [baseline_14p_1person_bs128_seed1](current/baseline_14p_1person_bs128_seed1/README.md) | 原始 SkateFormer，FFN=4 | 88.9307 | — | 500 | 97.74 | 3,386,707 |
+| M1 | [rca_14p_1person_ffn4_bs128_seed1](current/rca_14p_1person_ffn4_bs128_seed1/README.md) | 全 stage RCA，FFN=4 | 88.2695 | -0.6611 | 489 | 未提供 | 3,376,819 |
+
+证据等级：用户提供的训练末期日志与完成汇总；尚未核验服务器实际配置、checkpoint 或独立复测。
+RCA 最佳 epoch=489 的 Top-5 未贴出，不能用 epoch 495 或 500 的 Top-5 代替。
+
+单 seed 初步观察：
+- RCA 精度低 0.6611 个百分点，参数少 9,888（约 0.292%）；当前没有精度提升证据。
+- 时间戳显示 B0 epoch 499/500 训练部分各约 73 秒，RCA epoch 496–500 为 59–60 秒。
+  这是不同时间段的粗略观察，不能归因于模块本身，也不是推理延迟。
+- 本机随机权重结构测速已完成，见下表；最佳 checkpoint 的推理耗时仍待核验。
+- 先核验两组最佳 checkpoint 并补同设备 batch=1 FP32 推理对照，再决定是否进行 stage 替换或 FFN 消融。
+
+## 本机推理结构测速（2026-10-12）
+
+RTX 4070 Laptop，FP32、TF32 off、batch=1、GPU-resident 输入 (1,3,64,14,1)，随机权重。
+5 轮 × 100 次同步墙钟计时；不含数据加载/传输。FLOPs 是 profiler 支持算子的部分计数。
+
+| 模型 | GFLOPs/sample（部分计数） | Mean ms | P95 ms | samples/s |
+|---|---:|---:|---:|---:|
+| B0 | 1.9946 | 17.028 | 20.469 | 58.73 |
+| M1 | 1.8072 | 11.694 | 14.919 | 85.51 |
+
+RCA 本次平均延迟降低 31.32%，加速比 1.456x；计入 FLOPs 下降 9.39%。
+速度与训练精度来自不同证据：不能表述为已完成最佳权重的 accuracy-latency 验证。
+[完整协议、脚本与原始结果](current/inference_20261012/README.md)。
 
 ## 旧 batch=32 记录
 
@@ -18,7 +42,7 @@
 |---|---|---|---|---|---|---|---|---|
 | [baseline_14p_1person_seed1](current/baseline_14p_1person_seed1/README.md) | 原始 SkateFormer | 日志报告完成；混写及权重待核实 | 88.9307 | — | 待补 | — | 待补 | 3,386,707 |
 
-2026-10-10 已登记用户日志中的 B0 结果：best epoch=497，Top-5=97.71%。日志疑似混写，尚未核验实际 checkpoint 或独立复测；不作为完整验证结果。RCA 已有代码入口，但尚未登记配套运行证据，不填结果行。
+2026-10-10 已登记用户日志中的 B0 结果：best epoch=497，Top-5=97.71%。日志疑似混写，尚未核验实际 checkpoint 或独立复测；不作为完整验证结果。batch=32 的 RCA 没有最终结果记录。
 本表是摘要；每行详细证据放在对应 run 目录。后续有实际运行再追加变体，避免把计划误当结果。
 
 历史 94.23% 的 split 未知，91.73% 属于旧 24 点双人 XSub；均不能填进本表。
