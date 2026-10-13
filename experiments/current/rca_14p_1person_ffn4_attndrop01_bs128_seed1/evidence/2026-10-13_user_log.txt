@@ -1,0 +1,95 @@
+[ Tue Oct 13 04:35:22 2026 ]    Learning Rate: 0.0000
+[ Tue Oct 13 04:35:22 2026 ]    Time consumption: [Data]07%, [Network]92%
+[ Tue Oct 13 04:35:22 2026 ] Eval epoch: 494
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 129/129 [00:10<00:00, 12.20it/s]
+Accuracy:  0.8839691878449688  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1/runs
+[ Tue Oct 13 04:35:33 2026 ]    Mean test loss of 129 batches: 1.0766198094501052.
+[ Tue Oct 13 04:35:33 2026 ]    Top1: 88.40%
+[ Tue Oct 13 04:35:33 2026 ]    Top5: 97.82%
+[ Tue Oct 13 04:35:33 2026 ] Training epoch: 495
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 313/313 [00:57<00:00,  5.48it/s]
+[ Tue Oct 13 04:36:30 2026 ]    Mean training loss: 0.8489.  Mean training acc: 96.35%.
+[ Tue Oct 13 04:36:30 2026 ]    Mean prefix action loss: 0.8489.
+[ Tue Oct 13 04:36:30 2026 ]    Learning Rate: 0.0000
+[ Tue Oct 13 04:36:30 2026 ]    Time consumption: [Data]07%, [Network]93%
+[ Tue Oct 13 04:36:30 2026 ] Eval epoch: 495
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 129/129 [00:10<00:00, 12.32it/s]
+Accuracy:  0.8851822648147025  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1/runs
+[ Tue Oct 13 04:36:41 2026 ]    Mean test loss of 129 batches: 1.0736030950102695.
+[ Tue Oct 13 04:36:41 2026 ]    Top1: 88.52%
+[ Tue Oct 13 04:36:41 2026 ]    Top5: 97.80%
+[ Tue Oct 13 04:36:41 2026 ] Training epoch: 496
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 313/313 [00:58<00:00,  5.37it/s]
+[ Tue Oct 13 04:37:39 2026 ]    Mean training loss: 0.8471.  Mean training acc: 96.37%.
+[ Tue Oct 13 04:37:39 2026 ]    Mean prefix action loss: 0.8471.
+[ Tue Oct 13 04:37:39 2026 ]    Learning Rate: 0.0000
+[ Tue Oct 13 04:37:39 2026 ]    Time consumption: [Data]07%, [Network]92%
+[ Tue Oct 13 04:37:39 2026 ] Eval epoch: 496
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 129/129 [00:09<00:00, 13.71it/s]
+Accuracy:  0.8845757263298356  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1/runs
+[ Tue Oct 13 04:37:49 2026 ]    Mean test loss of 129 batches: 1.0739743561707726.
+[ Tue Oct 13 04:37:49 2026 ]    Top1: 88.46%
+[ Tue Oct 13 04:37:49 2026 ]    Top5: 97.82%
+[ Tue Oct 13 04:37:49 2026 ] Training epoch: 497
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 313/313 [00:57<00:00,  5.47it/s]
+[ Tue Oct 13 04:38:46 2026 ]    Mean training loss: 0.8476.  Mean training acc: 96.32%.
+[ Tue Oct 13 04:38:46 2026 ]    Mean prefix action loss: 0.8476.
+[ Tue Oct 13 04:38:46 2026 ]    Learning Rate: 0.0000
+[ Tue Oct 13 04:38:46 2026 ]    Time consumption: [Data]07%, [Network]93%
+[ Tue Oct 13 04:38:46 2026 ] Eval epoch: 497
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 129/129 [00:10<00:00, 12.20it/s]
+Accuracy:  0.883726572451022  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1/runs
+[ Tue Oct 13 04:38:57 2026 ]    Mean test loss of 129 batches: 1.0768536758977314.
+[ Tue Oct 13 04:38:57 2026 ]    Top1: 88.37%
+[ Tue Oct 13 04:38:57 2026 ]    Top5: 97.80%
+[ Tue Oct 13 04:38:57 2026 ] Training epoch: 498
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 313/313 [00:57<00:00,  5.47it/s]
+[ Tue Oct 13 04:39:54 2026 ]    Mean training loss: 0.8454.  Mean training acc: 96.44%.
+[ Tue Oct 13 04:39:54 2026 ]    Mean prefix action loss: 0.8454.
+[ Tue Oct 13 04:39:54 2026 ]    Learning Rate: 0.0000
+[ Tue Oct 13 04:39:54 2026 ]    Time consumption: [Data]07%, [Network]93%
+[ Tue Oct 13 04:39:54 2026 ] Eval epoch: 498
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 129/129 [00:07<00:00, 17.22it/s]
+Accuracy:  0.8846363801783224  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1/runs
+[ Tue Oct 13 04:40:02 2026 ]    Mean test loss of 129 batches: 1.0762222275253415.
+[ Tue Oct 13 04:40:02 2026 ]    Top1: 88.46%
+[ Tue Oct 13 04:40:02 2026 ]    Top5: 97.84%
+[ Tue Oct 13 04:40:02 2026 ] Training epoch: 499
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 313/313 [00:59<00:00,  5.23it/s]
+[ Tue Oct 13 04:41:02 2026 ]    Mean training loss: 0.8457.  Mean training acc: 96.43%.
+[ Tue Oct 13 04:41:02 2026 ]    Mean prefix action loss: 0.8457.
+[ Tue Oct 13 04:41:02 2026 ]    Learning Rate: 0.0000
+[ Tue Oct 13 04:41:02 2026 ]    Time consumption: [Data]06%, [Network]93%
+[ Tue Oct 13 04:41:02 2026 ] Eval epoch: 499
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 129/129 [00:07<00:00, 17.09it/s]
+Accuracy:  0.8836659186025353  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1/runs
+[ Tue Oct 13 04:41:10 2026 ]    Mean test loss of 129 batches: 1.0749102299527604.
+[ Tue Oct 13 04:41:10 2026 ]    Top1: 88.37%
+[ Tue Oct 13 04:41:10 2026 ]    Top5: 97.78%
+[ Tue Oct 13 04:41:10 2026 ] Training epoch: 500
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 313/313 [00:59<00:00,  5.23it/s]
+[ Tue Oct 13 04:42:10 2026 ]    Mean training loss: 0.8451.  Mean training acc: 96.44%.
+[ Tue Oct 13 04:42:10 2026 ]    Mean prefix action loss: 0.8451.
+[ Tue Oct 13 04:42:10 2026 ]    Learning Rate: 0.0000
+[ Tue Oct 13 04:42:10 2026 ]    Time consumption: [Data]06%, [Network]93%
+[ Tue Oct 13 04:42:10 2026 ] Eval epoch: 500
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 129/129 [00:07<00:00, 16.97it/s]
+Accuracy:  0.8850609571177291  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1/runs
+[ Tue Oct 13 04:42:17 2026 ]    Mean test loss of 129 batches: 1.0755688954693403.
+[ Tue Oct 13 04:42:18 2026 ]    Top1: 88.51%
+[ Tue Oct 13 04:42:18 2026 ]    Top5: 97.78%
+[ Tue Oct 13 04:42:18 2026 ] Eval epoch: 1
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 129/129 [00:10<00:00, 12.12it/s]
+Accuracy:  0.8860920725420028  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1/runs
+[ Tue Oct 13 04:42:28 2026 ]    Mean test loss of 129 batches: 1.0726404938586922.
+[ Tue Oct 13 04:42:29 2026 ]    Top1: 88.61%
+[ Tue Oct 13 04:42:29 2026 ]    Top5: 97.90%
+[ Tue Oct 13 04:42:29 2026 ] Best accuracy: 0.8860920725420028
+[ Tue Oct 13 04:42:29 2026 ] Epoch number: 483
+[ Tue Oct 13 04:42:29 2026 ] Model name: ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_bs128_seed1
+[ Tue Oct 13 04:42:29 2026 ] Model total number of params: 3376819
+[ Tue Oct 13 04:42:29 2026 ] Weight decay: 0.1
+[ Tue Oct 13 04:42:29 2026 ] Base LR: 0.001
+[ Tue Oct 13 04:42:29 2026 ] Batch Size: 128
+[ Tue Oct 13 04:42:29 2026 ] Test Batch Size: 128
+[ Tue Oct 13 04:42:29 2026 ] seed: 1

@@ -3,17 +3,19 @@
 协议：NTU60 XSub，joint 输入，14 点、第一人、64 帧。对照为原始 SkateFormer block。
 当前训练协议为 batch=128、base LR=1e-3、500 epochs、seed=1；主测速仍为 batch=1、FP32，同设备同计时口径比较。
 
-## 当前 batch=128 对照（结果更新：2026-10-12）
+## 当前 batch=128 对照（结果更新：2026-10-13）
 
 | 实验 | 运行记录 | 模块 | Best Top-1 (%) | 差值 (百分点) | Best epoch | Top-5 @ best (%) | 参数量 |
 |---|---|---|---:|---:|---:|---|---:|
 | B0 | [baseline_14p_1person_bs128_seed1](current/baseline_14p_1person_bs128_seed1/README.md) | 原始 SkateFormer，FFN=4 | 88.9307 | — | 500 | 97.74 | 3,386,707 |
 | M1 | [rca_14p_1person_ffn4_bs128_seed1](current/rca_14p_1person_ffn4_bs128_seed1/README.md) | 全 stage RCA，FFN=4 | 88.2695 | -0.6611 | 489 | 未提供 | 3,376,819 |
+| M1-attndrop01 | [rca_14p_1person_ffn4_attndrop01_bs128_seed1](current/rca_14p_1person_ffn4_attndrop01_bs128_seed1/README.md) | 全 stage RCA，FFN=4，attn_drop=0.1 | 88.6092 | -0.3215 | 483 | 97.90 | 3,376,819 |
 
 证据等级：用户提供的训练末期日志与完成汇总；尚未核验服务器实际配置、checkpoint 或独立复测。
 RCA 最佳 epoch=489 的 Top-5 未贴出，不能用 epoch 495 或 500 的 Top-5 代替。
 
 单 seed 初步观察：
+- dropout=0.1 的 RCA 达到 88.6092%，比原 RCA 提高 0.3397 个百分点，仍比 B0 低 0.3215 个百分点。推理结构不变，但未重新测量该 checkpoint 的延迟。
 - RCA 精度低 0.6611 个百分点，参数少 9,888（约 0.292%）；当前没有精度提升证据。
 - 时间戳显示 B0 epoch 499/500 训练部分各约 73 秒，RCA epoch 496–500 为 59–60 秒。
   这是不同时间段的粗略观察，不能归因于模块本身，也不是推理延迟。
@@ -47,3 +49,11 @@ RCA 本次平均延迟降低 31.32%，加速比 1.456x；计入 FLOPs 下降 9.3
 
 历史 94.23% 的 split 未知，91.73% 属于旧 24 点双人 XSub；均不能填进本表。
 历史记录见 [归档总表](archive/README.md)。
+
+## 时间锚点成本消融（2026-10-13）
+
+同机同次测试，dropout=0.1、FP32、B=1、随机权重，每组 10×100 次：
+16 anchors 平均 9.820 ms，32 anchors 平均 10.050 ms
+（+2.34%，轮间有抖动）；部分 GFLOPs 1.8072 → 1.8226。
+参数量相同。32 anchors 的识别精度尚未评估。
+[协议与原始记录](current/anchors_20261013/README.md)。

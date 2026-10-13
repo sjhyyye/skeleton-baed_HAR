@@ -1,0 +1,28 @@
+block_type: skate_rca
+rca_rank: 2
+rca_qk_ratio: 0.25
+rca_temporal_anchors: 16
+rca_ffn_ratio: 4.0
+num_classes: 60
+num_people: 1
+num_points: 14
+kernel_size: 7
+num_heads: 32
+attn_drop: 0.1
+head_drop: 0.0
+rel: true
+drop_path: 0.2
+type_1_size:
+- 8
+- 7
+type_2_size:
+- 8
+- 7
+type_3_size:
+- 8
+- 7
+type_4_size:
+- 8
+- 7
+mlp_ratio: 4.0
+index_t: true

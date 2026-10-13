@@ -1,0 +1,37 @@
+run_id: rca_14p_1person_ffn4_attndrop01_bs128_seed1
+experiment_id: M1-attndrop01
+status: reported_completed_checkpoint_unverified
+received_at: '2026-10-13'
+configuration:
+  source: SkateFormer/config/train/acceleration/rca_14p_1person_ffn4_attndrop01.yaml
+  snapshot: config.snapshot.yaml
+  sha256: 13759f6745895bc73e0690b1999dc384928ff2ea3e3029c77da54f8152196307
+  actual_run_config_verified: false
+training:
+  batch_size: 128
+  base_lr: 0.001
+  seed: 1
+  completed_epochs: 500
+  attn_drop: 0.1
+  ffn_ratio: 4
+metrics:
+  top1_percent: 88.60920725420029
+  best_epoch: 483
+  top5_at_best_checkpoint_percent: 97.9
+  parameters: 3376819
+  latency_ms_per_sample: null
+comparison:
+  delta_vs_B0_pp: -0.3214653969794341
+  delta_vs_M1_drop05_pp: 0.3396615515254524
+evidence:
+  log: evidence/2026-10-13_user_log.txt
+  sha256: 0f1b53500b4180c438a8a6257626b389eb75d2eea3f9d72a91897ae4dd40ea9b
+  checkpoint: null
+  independent_evaluation_verified: false
+  final_best_checkpoint_eval_present: true
+notes:
+- 'Eval epoch: 1 at end is the existing code calling eval(epoch=0) on best weights,
+  not resumed training.'
+- 'No new latency measurement: eval-mode dropout is disabled, so structure/cost are
+  unchanged, but prior measured ms is not copied as a new measurement.'
+- Single-seed result; checkpoint and actual server config not independently inspected.
