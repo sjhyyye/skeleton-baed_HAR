@@ -251,7 +251,7 @@ class SkateFormerBlockDS(nn.Module):
             attn_drop=0., drop=0., rel=True, drop_path=0., mlp_ratio=4.,
             act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm,
             block_type='skateformer', rca_rank=2, rca_qk_ratio=0.25,
-            rca_temporal_anchors=16, rca_ffn_ratio=None):
+            rca_temporal_anchors=16, rca_ffn_ratio=None, rca_local_temporal_kernel=0):
         super(SkateFormerBlockDS, self).__init__()
 
         if downscale:
@@ -290,6 +290,7 @@ class SkateFormerBlockDS(nn.Module):
                 qk_ratio=rca_qk_ratio,
                 temporal_anchors=rca_temporal_anchors,
                 ffn_ratio=rca_ffn_ratio,
+                local_temporal_kernel=rca_local_temporal_kernel,
             )
         self.transformer = block_class(**block_kwargs)
     def forward(self, input):
@@ -312,7 +313,7 @@ class SkateFormerStage(nn.Module):
             attn_drop=0., drop=0., rel=True, drop_path=0., mlp_ratio=4.,
             act_layer=nn.GELU, norm_layer_transformer=nn.LayerNorm,
             block_type='skateformer', rca_rank=2, rca_qk_ratio=0.25,
-            rca_temporal_anchors=16, rca_ffn_ratio=None):
+            rca_temporal_anchors=16, rca_ffn_ratio=None, rca_local_temporal_kernel=0):
         super(SkateFormerStage, self).__init__()
         blocks = []
         for index in range(depth):
@@ -338,7 +339,8 @@ class SkateFormerStage(nn.Module):
                     block_type=block_type, rca_rank=rca_rank,
                     rca_qk_ratio=rca_qk_ratio,
                     rca_temporal_anchors=rca_temporal_anchors,
-                    rca_ffn_ratio=rca_ffn_ratio))
+                    rca_ffn_ratio=rca_ffn_ratio,
+                    rca_local_temporal_kernel=rca_local_temporal_kernel))
         self.blocks = nn.ModuleList(blocks)
 
     def forward(self, input):
@@ -360,7 +362,7 @@ class SkateFormer(nn.Module):
                  intent_num_classes=0, intent_condition_mode='none', intent_condition_on='probs',
                  intent_condition_detach=False, intent_action_bias_scale=1.0, intent_action_gate_scale=1.0,
                  block_type='skateformer', rca_rank=2, rca_qk_ratio=0.25,
-                 rca_temporal_anchors=16, rca_ffn_ratio=None):
+                 rca_temporal_anchors=16, rca_ffn_ratio=None, rca_local_temporal_kernel=0):
 
         super(SkateFormer, self).__init__()
 
@@ -439,7 +441,8 @@ class SkateFormer(nn.Module):
                     block_type=block_type, rca_rank=rca_rank,
                     rca_qk_ratio=rca_qk_ratio,
                     rca_temporal_anchors=rca_temporal_anchors,
-                    rca_ffn_ratio=rca_ffn_ratio
+                    rca_ffn_ratio=rca_ffn_ratio,
+                    rca_local_temporal_kernel=rca_local_temporal_kernel
                 )
             )
         self.stages = nn.ModuleList(stages)

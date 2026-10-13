@@ -1,0 +1,4 @@
+PASS: config differs only by work_dir and rca_local_temporal_kernel=3.
+PASS: all 8 RCA blocks enabled; scale=0 outputs exactly match original RCA after loading shared weights.
+PASS: batch2 CPU full-model forward/backward finite; every new depthwise weight and scale receives nonzero finite gradients.
+Parameters: 3380859.

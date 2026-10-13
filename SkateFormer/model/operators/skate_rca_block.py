@@ -34,7 +34,7 @@ class SkateRCABlock(nn.Module):
         type_4_size=(1, 1), attn_drop=0.0, drop=0.0, rel=True,
         drop_path=0.0, mlp_ratio=4.0, act_layer=nn.GELU,
         norm_layer=nn.LayerNorm, relation_rank=2, qk_ratio=0.25,
-        temporal_anchors=16, ffn_ratio=None,
+        temporal_anchors=16, ffn_ratio=None, local_temporal_kernel=0,
     ):
         super().__init__()
         del num_heads, type_1_size, type_2_size, type_3_size, type_4_size
@@ -51,6 +51,16 @@ class SkateRCABlock(nn.Module):
         qkc = math.ceil(qkc / relation_rank) * relation_rank
         self.head_dim = qkc // relation_rank
         self.scale = self.head_dim ** -0.5
+
+        if local_temporal_kernel < 0 or (local_temporal_kernel and local_temporal_kernel % 2 == 0):
+            raise ValueError("local_temporal_kernel must be zero (disabled) or a positive odd integer")
+        self.local_temporal = None
+        if local_temporal_kernel:
+            self.local_temporal = nn.Conv2d(
+                in_channels, in_channels, (local_temporal_kernel, 1),
+                padding=(local_temporal_kernel // 2, 0), groups=in_channels, bias=False,
+            )
+            self.local_scale = nn.Parameter(torch.tensor(0.1))
 
         self.norm1 = norm_layer(in_channels)
         self.value_proj = nn.Conv2d(in_channels, in_channels, 1)
@@ -126,7 +136,8 @@ class SkateRCABlock(nn.Module):
                 f"got {tuple(x.shape)}")
         z = self.norm1(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
         spatial, temporal = self._spatial_attention(z), self._temporal_attention(z)
-        values = self.value_proj(z).reshape(
+        value_map = self.value_proj(z)
+        values = value_map.reshape(
             b, self.relation_rank, self.rank_channels, t, v)
         values = torch.matmul(values, spatial.transpose(-2, -1).unsqueeze(2))
         anchors = self._pool_values(values)
@@ -138,6 +149,8 @@ class SkateRCABlock(nn.Module):
         composed *= (gates * self.relation_rank).view(
             b, self.relation_rank, 1, 1, 1)
         composed = composed.reshape(b, c, t, v)
+        if self.local_temporal is not None:
+            composed = composed + self.local_scale * self.local_temporal(value_map)
         x = x + self.drop_path(self.out_drop(self.out_proj(composed)))
         ffn = self.ffn(self.norm2(x.permute(0, 2, 3, 1)))
         return x + self.drop_path(ffn.permute(0, 3, 1, 2))
