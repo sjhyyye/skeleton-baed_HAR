@@ -66,7 +66,7 @@ experiments:
   baseline_value: {top1_percent: 88.93067265117972, best_epoch: 500, evidence: "user_log_checkpoint_unverified"}
   best_value: {top1_percent: 88.93067265117972, run_id: "baseline_14p_1person_bs128_seed1", criterion: "reported_top1_only_not_pareto"}
   total_runs: 0  # Independently verified runs; reported completions counted separately.
-  reported_completed_runs: 3
+  reported_completed_runs: 4
   results_index: "experiments/RESULTS.md"
   history_index: "experiments/archive/README.md"
   baseline_run_id: "baseline_14p_1person_bs128_seed1"

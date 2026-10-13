@@ -1,0 +1,38 @@
+run_id: rca_14p_1person_ffn4_attndrop01_anchors32_bs128_seed1
+experiment_id: M1-attndrop01-anchors32
+status: reported_completed_checkpoint_unverified
+received_at: '2026-10-13'
+configuration:
+  source: SkateFormer/config/train/acceleration/rca_14p_1person_ffn4_attndrop01_anchors32.yaml
+  snapshot: config.snapshot.yaml
+  sha256: e09eec328d92a736c9f62cff0baf0c187bb165d28913462ffe0fa7efa814e44e
+  actual_run_config_verified: false
+training:
+  batch_size: 128
+  base_lr: 0.001
+  seed: 1
+  completed_epochs: 500
+  attn_drop: 0.1
+  temporal_anchors: 32
+  ffn_ratio: 4
+metrics:
+  top1_percent: 88.61527263904895
+  best_epoch: 492
+  top5_at_best_checkpoint_percent: 97.88
+  parameters: 3376819
+  latency_ms_per_sample: null
+comparison:
+  delta_vs_B0_pp: -0.31540001213076607
+  delta_vs_anchors16_pp: 0.006065384848668032
+evidence:
+  log: evidence/2026-10-13_user_log.txt
+  sha256: 7d972fd12ab2fc810fb4949619779bf5621433f9b94cf1cea5111f9dc1a0579e
+  checkpoint: null
+  independent_evaluation_verified: false
+  final_best_checkpoint_eval_present: true
+notes:
+- Selected user log lines preserved, not a complete training log.
+- 'Final Eval epoch: 1 is best-weight evaluation display; best training epoch is 492.'
+- Single seed; 0.0061 pp increase over anchors16 does not establish a reliable accuracy
+  improvement.
+- Random-weight architecture timing is recorded separately in ../anchors_20261013/README.md.

@@ -1,0 +1,18 @@
+User-provided excerpt, recorded 2026-10-13. Selected lines from the message; not a complete training log.
+[ Tue Oct 13 20:29:51 2026 ]    Mean training loss: 0.8402.  Mean training acc: 96.53%.
+[ Tue Oct 13 20:29:59 2026 ]    Top1: 88.40%
+[ Tue Oct 13 20:29:59 2026 ]    Top5: 97.89%
+[ Tue Oct 13 20:29:59 2026 ] Eval epoch: 1
+Accuracy:  0.8861527263904895  model:  ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_anchors32_bs128_seed1/runs
+[ Tue Oct 13 20:30:07 2026 ]    Mean test loss of 129 batches: 1.0739648346753083.
+[ Tue Oct 13 20:30:07 2026 ]    Top1: 88.62%
+[ Tue Oct 13 20:30:07 2026 ]    Top5: 97.88%
+[ Tue Oct 13 20:30:07 2026 ] Best accuracy: 0.8861527263904895
+[ Tue Oct 13 20:30:07 2026 ] Epoch number: 492
+[ Tue Oct 13 20:30:07 2026 ] Model name: ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_anchors32_bs128_seed1
+[ Tue Oct 13 20:30:07 2026 ] Model total number of params: 3376819
+[ Tue Oct 13 20:30:07 2026 ] Weight decay: 0.1
+[ Tue Oct 13 20:30:07 2026 ] Base LR: 0.001
+[ Tue Oct 13 20:30:07 2026 ] Batch Size: 128
+[ Tue Oct 13 20:30:07 2026 ] Test Batch Size: 128
+[ Tue Oct 13 20:30:07 2026 ] seed: 1
