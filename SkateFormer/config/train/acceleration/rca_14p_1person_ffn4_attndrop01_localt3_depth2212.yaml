@@ -1,0 +1,124 @@
+# S3: depths=[2, 2, 1, 2]; matched to measured candidate.
+# Direct class is required: SkateFormer_ fixes depths internally.
+# All training settings follow LocalT3; DropPath is redistributed over 7 blocks.
+seed: 1
+num_worker: 10
+work_dir: ./work_dir/acceleration/rca_14p_1person_ffn4_attndrop01_localt3_bs128_seed1_depth2212
+phase: train
+weights: null
+feeder: feeders.feeder_ntu.Feeder
+train_feeder_args:
+  data_path: ./data/ntu/NTU60_CS.npz
+  split: train
+  debug: false
+  window_size: 64
+  p_interval:
+  - 0.5
+  - 1
+  aug_method: a123489
+  intra_p: 0.5
+  inter_p: 0.2
+  thres: 64
+  uniform: true
+  partition: false
+  joint_indices:
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 8
+  - 9
+  - 10
+  - 12
+  - 15
+  - 16
+  - 19
+  - 20
+  - 21
+  num_people: 1
+test_feeder_args:
+  data_path: ./data/ntu/NTU60_CS.npz
+  split: test
+  window_size: 64
+  p_interval:
+  - 0.95
+  thres: 64
+  uniform: true
+  partition: false
+  joint_indices:
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 8
+  - 9
+  - 10
+  - 12
+  - 15
+  - 16
+  - 19
+  - 20
+  - 21
+  num_people: 1
+  debug: false
+model: model.SkateFormer.SkateFormer
+model_args:
+  block_type: skate_rca
+  rca_rank: 2
+  rca_qk_ratio: 0.25
+  rca_temporal_anchors: 16
+  rca_local_temporal_kernel: 3
+  rca_ffn_ratio: 4.0
+  num_classes: 60
+  num_people: 1
+  num_points: 14
+  kernel_size: 7
+  num_heads: 32
+  attn_drop: 0.1
+  head_drop: 0.0
+  rel: true
+  drop_path: 0.2
+  type_1_size:
+  - 8
+  - 7
+  type_2_size:
+  - 8
+  - 7
+  type_3_size:
+  - 8
+  - 7
+  type_4_size:
+  - 8
+  - 7
+  mlp_ratio: 4.0
+  index_t: true
+  depths:
+  - 2
+  - 2
+  - 1
+  - 2
+  channels:
+  - 96
+  - 192
+  - 192
+  - 192
+  embed_dim: 96
+optimizer: AdamW
+weight_decay: 0.1
+lr_scheduler: cosine
+base_lr: 0.001
+min_lr: 1.0e-05
+warmup_lr: 1.0e-07
+warmup_prefix: false
+warm_up_epoch: 25
+device:
+- 0
+batch_size: 128
+test_batch_size: 128
+num_epoch: 500
+nesterov: true
+grad_clip: true
+grad_max: 1.0
+loss_type: LSCE
