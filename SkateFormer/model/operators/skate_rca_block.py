@@ -47,6 +47,8 @@ class SkateRCABlock(nn.Module):
         self.rank_channels = in_channels // relation_rank
         self.temporal_anchors, self.kernel_size = temporal_anchors, kernel_size
         self.use_relation_priors = rel
+        self.register_buffer("_local_distance", None, persistent=False)
+        self._local_distance_key = None
         qkc = max(relation_rank * 8, int(round(in_channels * qk_ratio)))
         qkc = math.ceil(qkc / relation_rank) * relation_rank
         self.head_dim = qkc // relation_rank
@@ -113,10 +115,19 @@ class SkateRCABlock(nn.Module):
             b, self.relation_rank, self.head_dim, self.temporal_anchors)
         logits = torch.matmul(q.transpose(-2, -1), k) * self.scale
         if self.use_relation_priors:
-            fp = torch.linspace(0., 1., t, device=x.device)
-            ap = torch.linspace(0., 1., self.temporal_anchors, device=x.device)
-            radius = max(1.0 / max(t - 1, 1), self.kernel_size / t)
-            local = -(fp[:, None] - ap[None, :]).abs() / radius
+            # Cache only geometry; the learnable strength remains in the graph.
+            key = (t, self.temporal_anchors, self.kernel_size, x.device, torch.get_default_dtype())
+            local = self._local_distance
+            if (self._local_distance_key != key or local is None
+                    or local.device != x.device or local.dtype != torch.get_default_dtype()):
+                # Keep cached geometry usable if inference is followed by training.
+                with torch.inference_mode(False):
+                    fp = torch.linspace(0., 1., t, device=x.device)
+                    ap = torch.linspace(0., 1., self.temporal_anchors, device=x.device)
+                    radius = max(1.0 / max(t - 1, 1), self.kernel_size / t)
+                    local = -(fp[:, None] - ap[None, :]).abs() / radius
+                self._local_distance = local
+                self._local_distance_key = key
             s = F.softplus(self.temporal_local_strength).view(1, -1, 1, 1)
             logits = logits + s * local.view(1, 1, t, self.temporal_anchors)
         return self.attn_drop(logits.softmax(-1))
@@ -139,12 +150,19 @@ class SkateRCABlock(nn.Module):
         value_map = self.value_proj(z)
         values = value_map.reshape(
             b, self.relation_rank, self.rank_channels, t, v)
-        values = torch.matmul(values, spatial.transpose(-2, -1).unsqueeze(2))
+        # Fold channel/time into rows instead of broadcasting attention over channels.
+        br = b * self.relation_rank
+        values = torch.bmm(
+            values.reshape(br, self.rank_channels * t, v),
+            spatial.transpose(-2, -1).reshape(br, v, v),
+        ).reshape(b, self.relation_rank, self.rank_channels, t, v)
         anchors = self._pool_values(values)
-        composed = torch.matmul(
-            anchors.permute(0, 1, 2, 4, 3),
-            temporal.transpose(-2, -1).unsqueeze(2),
-        ).permute(0, 1, 2, 4, 3)
+        # Pooling already materializes contiguous (channel, joint, anchor) data.
+        composed = torch.bmm(
+            anchors.permute(0, 1, 2, 4, 3).reshape(
+                br, self.rank_channels * v, self.temporal_anchors),
+            temporal.transpose(-2, -1).reshape(br, self.temporal_anchors, t),
+        ).reshape(b, self.relation_rank, self.rank_channels, v, t).permute(0, 1, 2, 4, 3)
         gates = self.rank_router(z.mean((2, 3))).softmax(-1)
         composed *= (gates * self.relation_rank).view(
             b, self.relation_rank, 1, 1, 1)
