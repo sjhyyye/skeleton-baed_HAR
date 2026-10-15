@@ -1,0 +1,30 @@
+run_id: rca_14p_1person_ffn4_attndrop01_localt3_bs128_seed1
+status: reported_completed_checkpoint_unverified
+received_at: '2026-10-15'
+configuration:
+  source: SkateFormer/config/train/acceleration/rca_14p_1person_ffn4_attndrop01_localt3.yaml
+  snapshot: config.snapshot.yaml
+  sha256: c568c15bfe3dcd83963c8fbdfbcc0bc2598b524bea68beb8fa32741b6a8c5b98
+  actual_run_config_verified: false
+metrics:
+  top1_percent: 88.80329956935768
+  best_epoch: 494
+  top5_at_best_checkpoint_percent: 97.73
+  parameters: 3380859
+  latency_ms_per_sample: null
+training:
+  batch_size: 128
+  base_lr: 0.001
+  seed: 1
+  completed_epochs: 500
+  attn_drop: 0.1
+  temporal_anchors: 16
+  local_temporal_kernel: 3
+comparison:
+  delta_vs_B0_pp: -0.12737308182204288
+  delta_vs_RCA_drop01_pp: 0.19409231515739123
+evidence:
+  log: evidence/2026-10-15_user_log.txt
+  sha256: 307a1e446f7bd531bcd71e32046512b2cc0202d84e23ecb789f46fc439e9f732
+  checkpoint: null
+  independent_evaluation_verified: false

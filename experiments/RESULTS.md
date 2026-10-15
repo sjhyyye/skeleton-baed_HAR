@@ -3,7 +3,7 @@
 协议：NTU60 XSub，joint 输入，14 点、第一人、64 帧。对照为原始 SkateFormer block。
 当前训练协议为 batch=128、base LR=1e-3、500 epochs、seed=1；主测速仍为 batch=1、FP32，同设备同计时口径比较。
 
-## 当前 batch=128 对照（结果更新：2026-10-13）
+## 当前 batch=128 对照（结果更新：2026-10-15）
 
 | 实验 | 运行记录 | 模块 | Best Top-1 (%) | 差值 (百分点) | Best epoch | Top-5 @ best (%) | 参数量 |
 |---|---|---|---:|---:|---:|---|---:|
@@ -11,11 +11,13 @@
 | M1 | [rca_14p_1person_ffn4_bs128_seed1](current/rca_14p_1person_ffn4_bs128_seed1/README.md) | 全 stage RCA，FFN=4 | 88.2695 | -0.6611 | 489 | 未提供 | 3,376,819 |
 | M1-attndrop01 | [rca_14p_1person_ffn4_attndrop01_bs128_seed1](current/rca_14p_1person_ffn4_attndrop01_bs128_seed1/README.md) | 全 stage RCA，FFN=4，attn_drop=0.1 | 88.6092 | -0.3215 | 483 | 97.90 | 3,376,819 |
 | M1-attndrop01-anchors32 | [rca_14p_1person_ffn4_attndrop01_anchors32_bs128_seed1](current/rca_14p_1person_ffn4_attndrop01_anchors32_bs128_seed1/README.md) | 全 stage RCA，FFN=4，attn_drop=0.1，anchors=32 | 88.6153 | -0.3154 | 492 | 97.88 | 3,376,819 |
+| M1-localt3 | [rca_14p_1person_ffn4_attndrop01_localt3_bs128_seed1](current/rca_14p_1person_ffn4_attndrop01_localt3_bs128_seed1/README.md) | RCA，dropout=0.1，anchors=16，局部时间卷积3 | 88.8033 | -0.1274 | 494 | 97.73 | 3,380,859 |
 
 证据等级：用户提供的训练末期日志与完成汇总；尚未核验服务器实际配置、checkpoint 或独立复测。
 RCA 最佳 epoch=489 的 Top-5 未贴出，不能用 epoch 495 或 500 的 Top-5 代替。
 
 单 seed 初步观察：
+- LocalT3 达到88.8033%，较无卷积的RCA dropout0.1提高0.1941个百分点，较B0低0.1274个百分点；未达成同时提升速度与精度的目标。
 - anchors=32 达到 88.6153%，较 anchors=16 仅高 0.0061 个百分点，基本持平；仍未超过 B0。暂优先保留 anchors=16 作为后续结构消融起点。
 - dropout=0.1 的 RCA 达到 88.6092%，比原 RCA 提高 0.3397 个百分点，仍比 B0 低 0.3215 个百分点。推理结构不变，但未重新测量该 checkpoint 的延迟。
 - RCA 精度低 0.6611 个百分点，参数少 9,888（约 0.292%）；当前没有精度提升证据。
@@ -63,7 +65,7 @@ RCA 本次平均延迟降低 31.32%，加速比 1.456x；计入 FLOPs 下降 9.3
 ## 局部时间卷积分支消融（2026-10-13）
 
 新配置：RCA attn_drop=0.1、anchors=16，增加共享 value 上的3帧深度时间卷积，初始可学习缩放0.1。
-尚未训练，准确率待验证；旧配置默认关闭此分支。
+2026-10-15 用户报告最佳准确率88.8033%，epoch494，仍比B0低0.1274个百分点；旧配置默认关闭此分支。
 
 同次本机 RTX4070 Laptop、FP32、B1 随机权重，6轮×100次：
 B0 14.401ms、RCA 9.631ms、新 RCA LocalT3 10.326ms。
